@@ -7,9 +7,8 @@ const ServicesCarousel = ({ services }) => {
   const intervalRef = useRef();
 
   const totalServices = services.length;
-  const itemsToShow = 4; // ایک ساتھ 4 items دکھانے ہیں - یہ 3 سے 4 کر دیا گیا ہے
+  const itemsToShow = 4; 
 
-  // دکھائے جانے والے items کا حساب
   const getVisibleItems = () => {
     const items = [];
     
@@ -23,7 +22,6 @@ const ServicesCarousel = ({ services }) => {
 
   const visibleItems = getVisibleItems();
 
-  // آگے بڑھیں
   const nextSlide = useCallback(() => {
     if (isTransitioning) return;
     
@@ -31,7 +29,6 @@ const ServicesCarousel = ({ services }) => {
     setCurrentIndex((prev) => (prev + 1) % totalServices);
   }, [isTransitioning, totalServices]);
 
-  // پیچھے بڑھیں
   const prevSlide = useCallback(() => {
     if (isTransitioning) return;
     
@@ -41,7 +38,6 @@ const ServicesCarousel = ({ services }) => {
     );
   }, [isTransitioning, totalServices]);
 
-  // خاص slide پر جائیں
   const goToSlide = (index) => {
     if (isTransitioning) return;
     
@@ -49,7 +45,6 @@ const ServicesCarousel = ({ services }) => {
     setCurrentIndex(index);
   };
 
-  // Transition ختم ہونے پر
   useEffect(() => {
     if (isTransitioning) {
       const timer = setTimeout(() => {
