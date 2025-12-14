@@ -4,4 +4,7 @@
 @theme {
   --color-primary: #111111;
   --color-secondary: #FFFFFF;
+  --color-dark-text: #111111;
+  --color-light-dark-text: #3f3f3f;
+  --color-light-text: #FFFFFF;
 }
