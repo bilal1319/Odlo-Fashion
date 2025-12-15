@@ -1,0 +1,44 @@
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { connectDB } from "./src/db.js";
+
+dotenv.config();
+
+
+const app = express();
+
+// Middlewares
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true,
+}));
+app.use(express.json());
+
+// Test Route
+app.get("/", (req, res) => {
+  res.send("API is running...");
+});
+
+// Routes
+import productsRoutes from "./src/routes/products.routes.js";
+import categoriesRoutes from "./src/routes/categories.routes.js";
+import collectionsRoutes from "./src/routes/collections.route.js";
+import masterBundleRoutes from "./src/routes/masterBundle.routes.js";
+import bundleRoutes from "./src/routes/bundles.routes.js"
+
+app.use("/api/bundles", bundleRoutes);
+app.use("/api/master-bundles", masterBundleRoutes);
+app.use("/api/products", productsRoutes);
+app.use("/api/categories", categoriesRoutes);
+app.use("/api/collections", collectionsRoutes);
+
+const PORT = process.env.PORT || 8000;
+
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+});
+
+export default app;
