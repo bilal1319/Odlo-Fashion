@@ -126,6 +126,7 @@ const Services = ({ category = "luxury-logo-collections" }) => {
           key={service.id} 
           className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col h-full"
         >
+        <Link to={`/services/${service.id}`} className="w-full">
           {/* Product Image */}
           <div className="h-48 w-full overflow-hidden bg-gray-100 flex-shrink-0">
             <img 
@@ -138,6 +139,7 @@ const Services = ({ category = "luxury-logo-collections" }) => {
               }}
             />
           </div>
+          </Link>
           
           {/* Card Content */}
           <div className="p-5 flex flex-col flex-grow">
@@ -172,16 +174,19 @@ const Services = ({ category = "luxury-logo-collections" }) => {
                 </div>
                 
                 {/* Button with better styling */}
-                <Link to={`/services/${service.id}`} className="w-full">
+           
                 <button 
                   className="w-full px-6 py-3 text-sm font-medium rounded-md transition-all duration-300 bg-primary text-light hover:bg-gray-900 hover:scale-105 active:scale-95 shadow-md"
                 >
-                  VIEW DETAILS
+                  ADD TO CART
                 </button>
-                </Link>
+      
               </div>
+              
             </div>
+            
           </div>
+          
         </div>
       ))}
     </div>
