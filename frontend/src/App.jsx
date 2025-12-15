@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Services from './pages/Services';
 import Bundles from './pages/Bundles';
 import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
 import { CartProvider } from './context/Cartcontext';
 
 function App() {
@@ -15,8 +16,11 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/services" element={<Services />} />
+                       <Route path="/services" element={<Services />} />
+
             <Route path="/bundles" element={<Bundles />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
           </Routes>
         </div>
       </Router>

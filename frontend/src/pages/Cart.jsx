@@ -37,15 +37,17 @@ export default function Cart() {
         <div className="lg:col-span-2 space-y-6">
           {cart.map((item) => (
             <div key={`${item.type}-${item.id}`} className="border-b pb-6">
-              <div className="flex gap-6">
-               <img 
-  src={item.image} 
-  alt={item.title} 
-  className="w-32 h-32 object-cover" 
-/>
+              <div className="flex flex-col sm:flex-row gap-6 items-start">
+                {/* Image */}
+                <img 
+                  src={item.image} 
+                  alt={item.title} 
+                  className="w-32 h-32 object-cover flex-shrink-0 rounded border"
+                />
 
+                {/* Item Info */}
                 <div className="flex-1">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-semibold text-lg">{item.title}</h3>
                       <p className="text-sm text-gray-600 mt-1">{item.description}</p>
@@ -56,12 +58,13 @@ export default function Cart() {
                         <span className="font-medium">Type:</span> {item.type === "service" ? "Service" : "Bundle"}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right mt-2 sm:mt-0">
                       <p className="font-semibold">${item.price}</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between mt-4">
+                  {/* Quantity & Remove */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 gap-4">
                     <div className="flex items-center gap-4">
                       <button
                         onClick={() => updateQuantity(item.id, item.type, item.quantity - 1)}
@@ -91,7 +94,7 @@ export default function Cart() {
           
           <button
             onClick={clearCart}
-            className="text-red-600 hover:text-red-800 text-sm"
+            className="text-red-600 hover:text-red-800 text-sm mt-4"
           >
             Clear Cart
           </button>
@@ -99,18 +102,11 @@ export default function Cart() {
         
         {/* Order Summary */}
         <div className="lg:col-span-1">
-          <div className="border p-6">
+          <div className="border p-6 rounded">
             <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
             
             <div className="space-y-3 mb-6">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>${getTotalPrice().toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Shipping</span>
-                <span>Free</span>
-              </div>
+             
               <div className="border-t pt-3">
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
@@ -119,9 +115,13 @@ export default function Cart() {
               </div>
             </div>
             
-            <button className="bg-black text-white w-full py-3 uppercase hover:bg-gray-800 mb-4">
-              Proceed to Checkout
-            </button>
+         <Link
+  to="/checkout"
+  className="bg-black text-white w-full py-3 uppercase text-center block hover:bg-gray-800 mb-4"
+>
+  Proceed to checkout
+</Link>
+
             
             <Link 
               to="/services" 

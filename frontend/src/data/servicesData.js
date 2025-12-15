@@ -1,8 +1,14 @@
 
 export const servicesData = {
   "luxury-logo-collections": [
-    { id: 1, title: "Couture Serif Logo Pack", price: "$300", description: "A curated collection of high-fashion serif logos inspired by Parisian couture houses.", useCase: "fashion brands, perfume labels, boutique identities", image: "https://images.unsplash.com/photo-1634942537034-2531766767d1?w=400&h=300&fit=crop" },
-    { id: 2, title: "Modern Editorial Logo Set", price: "$300", description: "A set of clean, magazine-ready logotypes with bold typography and minimal geometry.", useCase: "modern fashion startups, luxury e-commerce, creative studios", image: "https://images.unsplash.com/photo-1634942536828-43c8f964db34?w=400&h=300&fit=crop" },
+  {
+    id: 1,
+    title: "Couture Serif Logo Pack",
+    price: "$300",
+    description: "A curated collection of high-fashion serif logos inspired by Parisian couture houses.",
+    useCase: "fashion brands, perfume labels, boutique identities",
+    image: "https://images.unsplash.com/photo-1634942537034-2531766767d1?w=400&h=300&fit=crop"
+  },    { id: 2, title: "Modern Editorial Logo Set", price: "$300", description: "A set of clean, magazine-ready logotypes with bold typography and minimal geometry.", useCase: "modern fashion startups, luxury e-commerce, creative studios", image: "https://images.unsplash.com/photo-1634942536828-43c8f964db34?w=400&h=300&fit=crop" },
     { id: 3, title: "Signature Brush Script Logos", price: "$300", description: "Hand-drawn signatures refined into vector perfection.", useCase: "personal brands, beauty lines, social creators", image: "https://images.unsplash.com/photo-1634942536748-57a5c6ee3b5c?w=400&h=300&fit=crop" },
     { id: 4, title: "Monogram Heritage Collection", price: "$300", description: "50 monograms inspired by the letterform systems of iconic luxury maisons.", useCase: "jewelry, accessories, packaging, upscale boutiques", image: "https://images.unsplash.com/photo-1634942536817-4291b3a5c8b7?w=400&h=300&fit=crop" },
     { id: 5, title: "Minimal Line Logos", price: "$300", description: "A minimalist pack built around thin-line geometry, fashion symmetry, and modern elegance.", useCase: "skincare brands, online boutiques, interior studios", image: "https://images.unsplash.com/photo-1634942536807-423b1e5c8b5d?w=400&h=300&fit=crop" },
