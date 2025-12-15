@@ -39,15 +39,15 @@ const Services = ({ category = "luxury-logo-collections" }) => {
       {selectedServices.map((service) => (
         <div 
           key={service.id} 
-          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col h-full"
+          className="group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col h-full hover:-translate-y-1" // Added group class
         >
         <Link to={`/services/${service.id}`} >
           {/* Product Image */}
-          <div className="h-48 w-full overflow-hidden bg-gray-100 flex-shrink-0">
+          <div className="h-48 w-full overflow-hidden bg-gray-100 shrink-0">
             <img 
               src={service.image} 
               alt={service.title}
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" // Changed hover to group-hover
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&h=300&fit=crop&q=80";
@@ -57,14 +57,14 @@ const Services = ({ category = "luxury-logo-collections" }) => {
           </Link>
           
           {/* Card Content */}
-          <div className="p-5 flex flex-col flex-grow">
+          <div className="p-5 flex flex-col grow">
             {/* Service Title */}
-            <h3 className="text-xl font-semibold mb-3 leading-tight text-dark line-clamp-2 min-h-[3.5rem]">
+            <h3 className="text-xl font-semibold mb-3 leading-tight text-dark line-clamp-2 min-h-[3.5rem] group-hover:text-primary transition-colors">
               {service.title}
             </h3>
             
             {/* Service Description */}
-            <p className="text-sm mb-4 leading-relaxed text-light-dark line-clamp-3 flex-grow">
+            <p className="text-sm mb-4 leading-relaxed text-light-dark line-clamp-3 grow group-hover:text-gray-900 transition-colors">
               {service.description}
             </p>
             
@@ -83,25 +83,20 @@ const Services = ({ category = "luxury-logo-collections" }) => {
               <div className="flex flex-col items-center space-y-4">
                 {/* Price with better styling */}
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-dark tracking-tight">
+                  <p className="text-2xl font-bold text-dark tracking-tight group-hover:text-primary transition-colors">
                     {service.price}
                   </p>
                 </div>
                 
                 {/* Button with better styling */}
-           
                 <button 
-                  className="w-full px-6 py-3 text-sm font-medium rounded-md transition-all duration-300 bg-primary text-light-text hover:bg-gray-900 hover:scale-105 active:scale-95 shadow-md"
+                  className="w-full px-6 py-3 text-sm font-medium rounded-sm transition-all duration-300 bg-white text-primary border border-primary group-hover:bg-primary group-hover:text-white group-hover:scale-105 group-hover:-translate-y-0.5 active:scale-95 shadow-md"
                 >
                   ADD TO CART
                 </button>
-      
               </div>
-              
             </div>
-            
           </div>
-          
         </div>
       ))}
     </div>

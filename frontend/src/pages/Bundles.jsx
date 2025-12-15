@@ -22,61 +22,51 @@ const Bundles = () => {
           {bundlesData.map((bundle) => (
             <div 
               key={bundle.id} 
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col h-full"
+              className="group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col h-full hover:-translate-y-1" // Added group class and hover lift
             >
               {/* Bundle Image - Fixed height container */}
-
               <Link to={`/bundles/${bundle.id}`}>
-              <div className="h-48 w-full overflow-hidden bg-gray-100 flex-shrink-0">
-                <img 
-                  src={bundle.image} 
-                  alt={bundle.title}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&h=300&fit=crop&q=80";
-                  }}
-                />
-              </div>
+                <div className="h-48 w-full overflow-hidden bg-gray-100 flex-shrink-0">
+                  <img 
+                    src={bundle.image} 
+                    alt={bundle.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" // Changed to group-hover
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&h=300&fit=crop&q=80";
+                    }}
+                  />
+                </div>
               </Link>
+              
               {/* Card Content - Flex-grow to fill space */}
               <div className="p-5 flex flex-col flex-grow">
                 {/* Bundle Title */}
-                <h3 className="text-xl font-semibold mb-3 leading-tight text-dark line-clamp-2">
+                <h3 className="text-xl font-semibold mb-3 leading-tight text-dark line-clamp-2 group-hover:text-primary transition-colors"> {/* Added group-hover */}
                   {bundle.title}
                 </h3>
                 
                 {/* Bundle Description */}
-                <p className="text-sm mb-6 leading-relaxed text-light-dark flex-grow line-clamp-3">
+                <p className="text-sm mb-6 leading-relaxed text-light-dark flex-grow line-clamp-3 group-hover:text-gray-900 transition-colors"> {/* Added group-hover */}
                   {bundle.description}
                 </p>
-                
-                {/* Use Case - Commented out for now */}
-                {/* <div className="mb-4">
-                  <p className="text-xs font-medium uppercase tracking-wider mb-1 text-light-dark">
-                    Perfect For
-                  </p>
-                  <p className="text-sm text-light-dark">
-                    {bundle.useCase}
-                  </p>
-                </div> */}
                 
                 {/* Price and Button - Column layout at bottom */}
                 <div className="pt-4 border-t border-gray-100 mt-auto">
                   <div className="flex flex-col items-center space-y-4">
                     {/* Price with better styling */}
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-dark tracking-tight">
+                      <p className="text-2xl font-bold text-dark tracking-tight group-hover:text-primary transition-colors"> {/* Added group-hover */}
                         {bundle.price}
                       </p>
-                      <p className="text-xs text-light-dark mt-1 uppercase tracking-wider">
+                      <p className="text-xs text-light-dark mt-1 uppercase tracking-wider group-hover:text-gray-700 transition-colors"> {/* Added group-hover */}
                         Starting Price
                       </p>
                     </div>
                     
                     {/* Button with better styling */}
                     <button 
-                      className="w-full px-6 py-3 text-sm font-medium rounded-md transition-all duration-300 bg-primary text-light-text hover:bg-gray-900 hover:scale-105 active:scale-95 shadow-md"
+                      className="w-full px-6 py-3 text-sm font-medium rounded-sm transition-all duration-300 bg-white text-primary border border-primary group-hover:bg-primary group-hover:text-white group-hover:scale-105 group-hover:-translate-y-0.5 active:scale-95 shadow-md" // Changed to group-hover
                     >
                       ADD TO CART
                     </button>
@@ -86,8 +76,6 @@ const Bundles = () => {
             </div>
           ))}
         </div>
-
-        
       </div>
     </div>
   );
