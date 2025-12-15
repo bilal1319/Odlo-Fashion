@@ -79,11 +79,11 @@ const Services = ({ category = "luxury-logo-collections" }) => {
             </div> */}
             
             {/* Price and Button - Fixed at bottom */}
-            <div className="pt-4 border-t border-gray-100 mt-auto">
+            <div className="pt-2 border-t border-gray-100 mt-auto">
               <div className="flex flex-col items-center space-y-4">
                 {/* Price with better styling */}
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-dark tracking-tight group-hover:text-primary transition-colors">
+                  <p className="text-xl font-bold text-dark tracking-tight group-hover:text-primary transition-colors">
                     {service.price}
                   </p>
                 </div>
