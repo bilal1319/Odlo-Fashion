@@ -40,12 +40,12 @@ const Home = () => {
       <Carousel />
      
       <div className="mt-4 sm:mt-6 md:mt-8 lg:mt-10 px-2 xs:px-4 sm:px-6 md:px-8 lg:px-12">
-        <h2 className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-semibold mb-3 sm:mb-4 md:mb-6 text-center md:text-left">
+        <h2 className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-serif font-semibold mb-3 sm:mb-4 md:mb-6 text-center md:text-left">
           Our Services
         </h2>
         <ServicesCarousel services={services} />
         
-        <h2 className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4 md:mb-6 mt-6 sm:mt-8 md:mt-10 lg:mt-12 text-center md:text-left">
+        <h2 className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-serif font-bold mb-3 sm:mb-4 md:mb-6 mt-6 sm:mt-8 md:mt-10 lg:mt-12 text-center md:text-left">
           Our Bundles
         </h2>
         <BundleCarousel services={bundles} />
