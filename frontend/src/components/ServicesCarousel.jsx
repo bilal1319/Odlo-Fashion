@@ -47,7 +47,7 @@ const ServicesCarousel = ({ services }) => {
                   ? "30%"
                   : "22%",
             }}
-            onClick={() => handleClick(index)} // Navigate on click
+            onClick={() => handleClick(index + 1)} // Navigate on click
           >
             <div className="relative overflow-hidden rounded-lg shadow-lg group">
               <img
@@ -71,6 +71,7 @@ const ServicesCarousel = ({ services }) => {
         .scrollbar-thick::-webkit-scrollbar-thumb {
           background-color: #999;
           border-radius: 5px;
+          
         }
         .scrollbar-thick::-webkit-scrollbar-track {
           background: #e0e0e0;

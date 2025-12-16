@@ -47,7 +47,7 @@ const BundleCarousel = ({ services }) => {
                   ? "35%"
                   : "28%",
             }}
-            onClick={() => handleClick(index)} // Navigate on click
+            onClick={() => handleClick(index + 1)} // Navigate on click
           >
             <div className="relative overflow-hidden rounded-lg shadow-lg group">
               <img
