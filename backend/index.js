@@ -26,12 +26,18 @@ import categoriesRoutes from "./src/routes/categories.routes.js";
 import collectionsRoutes from "./src/routes/collections.route.js";
 import masterBundleRoutes from "./src/routes/masterBundle.routes.js";
 import bundleRoutes from "./src/routes/bundles.routes.js"
+// import stripeWebhookRoutes from "./routes/stripeWebhook.route.js";
+
 
 app.use("/api/bundles", bundleRoutes);
 app.use("/api/master-bundles", masterBundleRoutes);
 app.use("/api/products", productsRoutes);
 app.use("/api/categories", categoriesRoutes);
 app.use("/api/collections", collectionsRoutes);
+app.use("/api/webhooks/stripe", express.raw({ type: "application/json" }));
+// app.use("/api/webhooks/stripe", stripeWebhookRoutes);
+
+
 
 const PORT = process.env.PORT || 8000;
 

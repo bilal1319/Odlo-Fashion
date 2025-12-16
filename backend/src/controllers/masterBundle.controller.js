@@ -1,14 +1,7 @@
-import express from "express";
-<<<<<<< HEAD
 import mongoose from "mongoose";
 
-const router = express.Router();
-
-/**
- * GET /api/master-bundles/:slug
- */
-router.get("/:slug", async (req, res) => {
-  try {
+export const masterBundleBySlug = async (req, res) => {
+    try {
     const db = mongoose.connection.db;
 
     const masterBundle = await db.collection("master_bundles").findOne({
@@ -63,14 +56,4 @@ router.get("/:slug", async (req, res) => {
       message: "Failed to fetch master bundle"
     });
   }
-});
-=======
-import { masterBundleBySlug } from "../controllers/masterBundle.controller.js";
-
-const router = express.Router();
-
-
-router.get("/:slug", masterBundleBySlug);
->>>>>>> origin/faizan-backend
-
-export default router;
+}

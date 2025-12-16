@@ -1,15 +1,7 @@
-import express from "express";
 import mongoose from "mongoose";
-<<<<<<< HEAD
 
-const router = express.Router();
-
-/**
- * GET /api/categories
- * Optional: ?collectionId=premium_products
- */
-router.get("/", async (req, res) => {
-  try {
+export const getCategories = async (req, res) => {
+    try {
     const db = mongoose.connection.db;
 
     if (!db) {
@@ -43,14 +35,4 @@ router.get("/", async (req, res) => {
       message: "Failed to fetch categories"
     });
   }
-});
-=======
-import { getCategories } from "../controllers/categories.controller.js";
-
-const router = express.Router();
-
-
-router.get("/", getCategories);
->>>>>>> origin/faizan-backend
-
-export default router;
+}

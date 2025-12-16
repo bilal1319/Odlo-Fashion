@@ -1,4 +1,5 @@
 import express from "express";
+<<<<<<< HEAD
 import mongoose from "mongoose";
 
 const router = express.Router();
@@ -84,5 +85,16 @@ router.get("/:slug", async (req, res) => {
     });
   }
 });
+=======
+import { getAllProducts, getProductBySlug } from "../controllers/product.controller.js";
+
+const router = express.Router();
+
+
+router.get("/", getAllProducts);
+
+
+router.get("/:slug", getProductBySlug);
+>>>>>>> origin/faizan-backend
 
 export default router;

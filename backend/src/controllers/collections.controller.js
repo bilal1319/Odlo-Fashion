@@ -1,11 +1,7 @@
-import express from "express";
-<<<<<<< HEAD
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const router = express.Router();
-
-router.get("/", async (req, res) => {
-  try {
+export const getCollections = async (req, res) => {
+    try {
     const db = mongoose.connection.db;
 
 
@@ -27,13 +23,4 @@ router.get("/", async (req, res) => {
       message: "Failed to fetch collections"
     });
   }
-});
-=======
-import { getCollections } from "../controllers/collections.controller.js";
-
-const router = express.Router();
-
-router.get("/", getCollections);
->>>>>>> origin/faizan-backend
-
-export default router;
+}
