@@ -1,5 +1,7 @@
-import React, { useRef } from 'react';
-import { FaUser, FaEnvelope, FaLock, FaPhone, FaArrowRight } from 'react-icons/fa';
+import React, { useRef, useState } from 'react';
+import { FaUser, FaEnvelope, FaLock, FaArrowRight } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 
 const Signup = () => {
   const fullNameRef = useRef(null);
@@ -7,28 +9,44 @@ const Signup = () => {
   const passwordRef = useRef(null);
   const confirmPasswordRef = useRef(null);
   const termsRef = useRef(null);
+  
+  const navigate = useNavigate();
+  const { signup, isLoading, error, clearError } = useAuthStore();
+  
+  const [localError, setLocalError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    clearError();
+    setLocalError('');
     
-    if (passwordRef.current.value !== confirmPasswordRef.current.value) {
-      alert("Passwords don't match!");
+    const fullName = fullNameRef.current.value;
+    const email = emailRef.current.value;
+    const password = passwordRef.current.value;
+    const confirmPassword = confirmPasswordRef.current.value;
+    const termsAccepted = termsRef.current.checked;
+
+    if (!fullName || !email || !password || !confirmPassword) {
+      setLocalError('Please fill in all fields');
       return;
     }
 
-    if (!termsRef.current.checked) {
-      alert("Please accept the terms and conditions");
+    if (password !== confirmPassword) {
+      setLocalError("Passwords don't match!");
       return;
     }
 
-    const formData = {
-      fullName: fullNameRef.current.value,
-      email: emailRef.current.value,
-      password: passwordRef.current.value,
-      termsAccepted: termsRef.current.checked
-    };
-    
-    console.log('Signup Data:', formData);
+    if (!termsAccepted) {
+      setLocalError("Please accept the terms and conditions");
+      return;
+    }
+
+    try {
+await signup({ username: fullName, email, password });
+      navigate('/'); // Success pe home page pe redirect
+    } catch (err) {
+      console.error('Signup error:', err);
+    }
   };
 
   return (
@@ -39,9 +57,15 @@ const Signup = () => {
             <div className="md:w-2/3 p-8">
               <div className="mb-8">
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Signup</h2>
-                <p className="text-gray-600">Create your account to access our services
-</p>
+                <p className="text-gray-600">Create your account to access our services</p>
               </div>
+
+              {/* Error Display */}
+              {(error || localError) && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-600 text-sm">{error || localError}</p>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -57,7 +81,8 @@ const Signup = () => {
                         ref={fullNameRef}
                         type="text"
                         required
-                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-gray-800 focus:border-gray-800 focus:bg-white transition-all duration-200"
+                        disabled={isLoading}
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-gray-800 focus:border-gray-800 focus:bg-white transition-all duration-200 disabled:opacity-50"
                         placeholder="John Doe"
                       />
                     </div>
@@ -75,14 +100,14 @@ const Signup = () => {
                         ref={emailRef}
                         type="email"
                         required
-                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-gray-800 focus:border-gray-800 focus:bg-white transition-all duration-200"
+                        disabled={isLoading}
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-gray-800 focus:border-gray-800 focus:bg-white transition-all duration-200 disabled:opacity-50"
                         placeholder="you@example.com"
                       />
                     </div>
                   </div>
                 </div>
 
-            
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-2">
@@ -96,7 +121,8 @@ const Signup = () => {
                         ref={passwordRef}
                         type="password"
                         required
-                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-gray-800 focus:border-gray-800 focus:bg-white transition-all duration-200"
+                        disabled={isLoading}
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-gray-800 focus:border-gray-800 focus:bg-white transition-all duration-200 disabled:opacity-50"
                         placeholder="••••••••"
                       />
                     </div>
@@ -114,36 +140,39 @@ const Signup = () => {
                         ref={confirmPasswordRef}
                         type="password"
                         required
-                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-gray-800 focus:border-gray-800 focus:bg-white transition-all duration-200"
+                        disabled={isLoading}
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-gray-800 focus:border-gray-800 focus:bg-white transition-all duration-200 disabled:opacity-50"
                         placeholder="••••••••"
                       />
                     </div>
                   </div>
                 </div>
 
-              <div className="flex items-start">
-  <div className="flex items-center h-5">
-    <input
-      ref={termsRef}
-      id="terms"
-      type="checkbox"
-      required
-      className="h-4 w-4 text-gray-800 focus:ring-gray-800 border-gray-300 rounded"
-    />
-  </div>
-  <div className="ml-3">
-    <label htmlFor="terms" className="text-sm text-gray-700">
-      I agree to the Terms of Service and Privacy Policy
-    </label>
-  </div>
-</div>
+                <div className="flex items-start">
+                  <div className="flex items-center h-5">
+                    <input
+                      ref={termsRef}
+                      id="terms"
+                      type="checkbox"
+                      required
+                      disabled={isLoading}
+                      className="h-4 w-4 text-gray-800 focus:ring-gray-800 border-gray-300 rounded disabled:opacity-50"
+                    />
+                  </div>
+                  <div className="ml-3">
+                    <label htmlFor="terms" className="text-sm text-gray-700">
+                      I agree to the Terms of Service and Privacy Policy
+                    </label>
+                  </div>
+                </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-gray-900 to-black text-white py-3 px-4 rounded-xl font-semibold hover:from-black hover:to-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center group"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-gray-900 to-black text-white py-3 px-4 rounded-xl font-semibold hover:from-black hover:to-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
                 >
-                  Create Account
-                  <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+                  {isLoading ? 'Creating Account...' : 'Create Account'}
+                  {!isLoading && <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform duration-200" />}
                 </button>
               </form>
 

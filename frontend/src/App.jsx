@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Services from './pages/Services';
@@ -11,6 +12,7 @@ import BundleDetails from './pages/BundlesDetails';
 import ScrollToTop from './components/ScrollToTop';
 import Signin from './pages/Signin';
 import Signup from './pages/Signup';
+import useAuthStore from './store/authStore';
 
 function App() {
   return (
@@ -25,7 +27,13 @@ function App() {
 
 function Layout() {
   const location = useLocation();
+  const { checkAuth } = useAuthStore();
   
+  // Page reload/refresh pe auth check
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   const noNavbarRoutes = ['/signin', '/signup'];
   const showNavbar = !noNavbarRoutes.includes(location.pathname);
 

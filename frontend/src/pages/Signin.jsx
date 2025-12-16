@@ -1,19 +1,39 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { FaEnvelope, FaLock, FaArrowRight, FaShieldAlt } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 
 const Signin = () => {
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
   const rememberMeRef = useRef(null);
+  
+  const navigate = useNavigate();
+  const { signin, isLoading, error, clearError } = useAuthStore();
+  
+  const [localError, setLocalError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const formData = {
-      email: emailRef.current.value,
-      password: passwordRef.current.value,
-      rememberMe: rememberMeRef.current.checked
-    };
-    console.log('Signin Data:', formData);
+    clearError();
+    setLocalError('');
+
+    const email = emailRef.current.value;
+    const password = passwordRef.current.value;
+    const rememberMe = rememberMeRef.current.checked;
+
+    if (!email || !password) {
+      setLocalError('Please fill in all fields');
+      return;
+    }
+
+    try {
+      await signin(email, password, rememberMe);
+      navigate('/'); // Success pe home page pe redirect
+    } catch (err) {
+      // Error already set in store
+      console.error('Login error:', err);
+    }
   };
 
   return (
@@ -28,7 +48,8 @@ const Signin = () => {
                 </div>
                 <h2 className="text-2xl font-bold mb-4">Welcome Back</h2>
                 <p className="text-gray-300 mb-8">
-Manage your services and orders             </p>
+                  Manage your services and orders
+                </p>
                 <div className="space-y-4">
                   <div className="flex items-center justify-center">
                     <div className="w-3 h-3 bg-white rounded-full mr-3"></div>
@@ -50,6 +71,14 @@ Manage your services and orders             </p>
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h2>
                 <p className="text-gray-600">Enter your credentials to access our services</p>
               </div>
+              
+              {/* Error Display */}
+              {(error || localError) && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-600 text-sm">{error || localError}</p>
+                </div>
+              )}
+              
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-800 mb-2">
@@ -63,7 +92,8 @@ Manage your services and orders             </p>
                       ref={emailRef}
                       type="email"
                       required
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-gray-800 focus:border-gray-800 focus:bg-white transition-all duration-200"
+                      disabled={isLoading}
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-gray-800 focus:border-gray-800 focus:bg-white transition-all duration-200 disabled:opacity-50"
                       placeholder="you@company.com"
                     />
                   </div>
@@ -85,7 +115,8 @@ Manage your services and orders             </p>
                       ref={passwordRef}
                       type="password"
                       required
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-gray-800 focus:border-gray-800 focus:bg-white transition-all duration-200"
+                      disabled={isLoading}
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-gray-800 focus:border-gray-800 focus:bg-white transition-all duration-200 disabled:opacity-50"
                       placeholder="Enter your password"
                     />
                   </div>
@@ -96,7 +127,8 @@ Manage your services and orders             </p>
                       ref={rememberMeRef}
                       id="remember-me"
                       type="checkbox"
-                      className="h-4 w-4 text-gray-800 focus:ring-gray-800 border-gray-300 rounded"
+                      disabled={isLoading}
+                      className="h-4 w-4 text-gray-800 focus:ring-gray-800 border-gray-300 rounded disabled:opacity-50"
                     />
                     <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                       Remember me
@@ -105,10 +137,11 @@ Manage your services and orders             </p>
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-gray-900 to-black text-white py-3 px-4 rounded-xl font-semibold hover:from-black hover:to-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center group"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-gray-900 to-black text-white py-3 px-4 rounded-xl font-semibold hover:from-black hover:to-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
                 >
-                  Sign In
-                  <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+                  {isLoading ? 'Signing In...' : 'Sign In'}
+                  {!isLoading && <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform duration-200" />}
                 </button>
               </form>
               <div className="text-center mt-3">
