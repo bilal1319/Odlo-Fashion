@@ -9,7 +9,8 @@ import { CartProvider } from './context/Cartcontext';
 import ServicesDetails from './pages/ServicesDetails';
 import BundleDetails from './pages/BundlesDetails';
 import ScrollToTop from './components/ScrollToTop';
-
+import Signin from './pages/Signin';
+import Signup from './pages/Signup';
 function App() {
   return (
     <CartProvider>
@@ -27,6 +28,9 @@ function App() {
             <Route path="/bundles/:id" element={<BundleDetails />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path='/signin' element={<Signin />} />
+    <Route path='/signup' element={<Signup />} />
+
           </Routes>
           </div>
         </div>
