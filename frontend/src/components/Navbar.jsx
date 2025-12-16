@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useCart } from "../context/Cartcontext";
 
 export default function Navbar() {
   const [hoverMenu, setHoverMenu] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState(null);
+  const { cartCount } = useCart();
 
   const menuItems = [
     {
@@ -57,16 +60,26 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-black text-white w-full py-3 px-4 md:px-6 relative">
+    <nav className="bg-black text-white w-full py-3 px-4 md:px-6 fixed top-0 left-0 z-50">
       {/* TOP ROW */}
       <div className="relative flex items-center justify-center max-w-7xl mx-auto">
         {/* LOGO CENTER */}
-        <h1 className="text-2xl md:text-3xl font-serif font-semibold">ODLO</h1>
+        <Link to="/" className="text-2xl md:text-3xl font-serif font-semibold">
+          ODLO
+        </Link>
 
-        {/* CART RIGHT */}
-        <div className="hidden lg:block uppercase absolute right-0 text-sm hover:underline cursor-default">
+        {/* CART RIGHT with Count Badge */}
+        <Link 
+          to="/cart" 
+          className="hidden lg:flex uppercase absolute right-0 text-sm hover:underline cursor-pointer items-center gap-2"
+        >
           Cart
-        </div>
+          {cartCount > 0 && (
+            <span className="bg-white text-black rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+              {cartCount}
+            </span>
+          )}
+        </Link>
 
         {/* HAMBURGER (MOBILE) */}
         <button
@@ -92,7 +105,7 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* DESKTOP MENU (CENTER UNDER LOGO) */}
+      {/* DESKTOP MENU */}
       <div className="hidden lg:flex justify-center mt-2">
         <ul className="flex gap-6 text-sm">
           {/* SERVICES */}
@@ -101,27 +114,18 @@ export default function Navbar() {
             onMouseEnter={() => setHoverMenu("services")}
             onMouseLeave={() => setHoverMenu(null)}
           >
-            <span className="hover:underline uppercase py-2 block">Services</span>
+            <Link to="/services" className="hover:underline uppercase py-2 block">
+              Services
+            </Link>
             <div className="absolute top-full left-1/2 -translate-x-1/2 bg-white text-black shadow-lg rounded-md p-4 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
               <ul className="space-y-2 text-sm">
-                <li className="hover:text-gray-600 cursor-pointer">
-                  LUXURY LOGO COLLECTIONS
-                </li>
-                <li className="hover:text-gray-600 cursor-pointer">
-                  BRANDING & IDENTITY PACKS
-                </li>
-                <li className="hover:text-gray-600 cursor-pointer">
-                  SOCIAL MEDIA KITS
-                </li>
-                <li className="hover:text-gray-600 cursor-pointer">
-                  POSTERS & PRINTS
-                </li>
-                <li className="hover:text-gray-600 cursor-pointer">
-                  MOCKUPS
-                </li>
-                <li className="hover:text-gray-600 cursor-pointer">
-                  3D FASHION ASSETS
-                </li>
+                {menuItems[0].submenu.map((sub, i) => (
+                  <li key={i} className="hover:text-gray-600 cursor-pointer">
+                    <Link to={`/services#${sub.toLowerCase().replace(/ & | /g, "-")}`} className="block">
+                      {sub}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
           </li>
@@ -132,36 +136,25 @@ export default function Navbar() {
             onMouseEnter={() => setHoverMenu("bundles")}
             onMouseLeave={() => setHoverMenu(null)}
           >
-            <span className="hover:underline uppercase py-2 block">Bundles</span>
+            <Link to="/bundles" className="hover:underline uppercase py-2 block">
+              Bundles
+            </Link>
             <div className="absolute top-full left-1/2 -translate-x-1/2 bg-white text-black shadow-lg rounded-md p-4 w-[420px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
               <ul className="space-y-2 text-sm">
-                <li className="hover:text-gray-600 cursor-pointer">
-                  Full Branding Studio Bundle
-                </li>
-                <li className="hover:text-gray-600 cursor-pointer">
-                  Poster Mega Pack
-                </li>
-                <li className="hover:text-gray-600 cursor-pointer">
-                  3D Accessories Collection
-                </li>
-                <li className="hover:text-gray-600 cursor-pointer">
-                  Social Media Master Bundle
-                </li>
-                <li className="hover:text-gray-600 cursor-pointer">
-                  The Luxury Mockup Collection
-                </li>
-                <li className="hover:text-gray-600 cursor-pointer">
-                  All in One Ultimate Bundle
-                </li>
+                {menuItems[1].submenu.map((sub, i) => (
+                  <li key={i} className="hover:text-gray-600 cursor-pointer">
+                    <Link to="/bundles" className="block">{sub}</Link>
+                  </li>
+                ))}
               </ul>
             </div>
           </li>
 
           <li className="cursor-default uppercase hover:underline py-2">
-            Privacy Policy
+            <Link to="/privacy-policy">Privacy Policy</Link>
           </li>
           <li className="cursor-default uppercase hover:underline py-2">
-            Refund Policy
+            <Link to="/refund-policy">Refund Policy</Link>
           </li>
         </ul>
       </div>
@@ -185,15 +178,25 @@ export default function Navbar() {
           }`}
         >
           <div className="pt-20 px-6">
+            {/* Mobile Cart */}
             <div className="mb-8 pb-4 border-b border-gray-800">
-              <div className="text-xl hover:underline uppercase cursor-default">
+              <Link 
+                to="/cart" 
+                className="text-xl hover:underline uppercase flex items-center gap-3"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 Cart
-              </div>
+                {cartCount > 0 && (
+                  <span className="bg-white text-black rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
             </div>
 
             <ul className="space-y-1">
               {menuItems.map((item, index) => (
-                <li key={index} className="border-b  border-gray-800">
+                <li key={index} className="border-b border-gray-800">
                   {item.submenu ? (
                     <>
                       <button
@@ -212,22 +215,31 @@ export default function Navbar() {
 
                       <div
                         className={`overflow-hidden transition-all ${
-                          activeSubMenu === item.name
-                            ? "max-h-96"
-                            : "max-h-0"
+                          activeSubMenu === item.name ? "max-h-96" : "max-h-0"
                         }`}
                       >
                         <ul className="pl-4 pb-4 space-y-3 text-sm">
                           {item.submenu.map((sub, i) => (
-                            <li key={i} className="text-gray-300">
-                              {sub}
+                            <li key={i} className="text-gray-300 hover:text-white">
+                              <Link 
+                                to={item.name === "Services" ? "/services" : "/bundles"}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                              >
+                                {sub}
+                              </Link>
                             </li>
                           ))}
                         </ul>
                       </div>
                     </>
                   ) : (
-                    <div className="py-4 text-lg">{item.name}</div>
+                    <Link 
+                      to={`/${item.name.toLowerCase().replace(" ", "-")}`}
+                      className="py-4 text-lg block"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {item.name}
+                    </Link>
                   )}
                 </li>
               ))}
