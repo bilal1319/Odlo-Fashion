@@ -1,4 +1,5 @@
 import express from "express";
+<<<<<<< HEAD
 import mongoose from "mongoose";
 
 const router = express.Router();
@@ -73,5 +74,14 @@ router.get("/:slug", async (req, res) => {
     });
   }
 });
+=======
+import { getBundleBySlug, getBundles } from "../controllers/bundles.controller.js";
+
+const router = express.Router();
+
+router.get("/", getBundles);
+
+router.get("/:slug", getBundleBySlug);
+>>>>>>> origin/faizan-backend
 
 export default router;
