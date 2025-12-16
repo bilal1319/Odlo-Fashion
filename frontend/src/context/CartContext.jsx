@@ -46,7 +46,6 @@ export const CartProvider = ({ children }) => {
 
   const updateQuantity = (id, type, quantity) => {
     if (quantity < 1) {
-      removeFromCart(id, type);
       return;
     }
 

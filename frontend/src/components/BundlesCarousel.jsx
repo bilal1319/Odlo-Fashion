@@ -110,7 +110,7 @@ const BundleCarousel = ({ services }) => {
   };
 
   return (
-    <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+    <div className="relative w-full bg-[#f4e6d9] py-3 max-w-6xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
       {/* Arrows - Hidden on mobile, shown on tablet and above */}
       <button
         onClick={prevSlide}

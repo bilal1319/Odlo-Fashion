@@ -1,8 +1,7 @@
-// src/components/ProductDetails.js
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { servicesData } from '../data/servicesData';
-import Services from './Services';
+import AddToCartButton from '../components/AddToCartButton';
 
 const ServicesDetails = () => {
   const { id } = useParams();
@@ -33,13 +32,6 @@ const ServicesDetails = () => {
     }
   };
   
-  // Handle add to cart
-  const handleAddToCart = () => {
-    // In a real app, you would dispatch to Redux or use context
-    alert(`Added ${quantity} x ${product.title} to cart!`);
-    // You can add cart logic here
-  };
-  
   // If product not found
   if (!product) {
     return (
@@ -60,10 +52,15 @@ const ServicesDetails = () => {
   
   const category = findProductCategory();
   
+  // Create an array item with quantity for AddToCartButton
+  const cartItem = {
+    ...product,
+    quantity: quantity
+  };
+  
   return (
     <div className="min-h-screen py-8 md:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
         
         {/* Back Button */}
         <button 
@@ -77,7 +74,7 @@ const ServicesDetails = () => {
         </button>
         
         {/* Main Product Section */}
-        <div className="rounded-lg  overflow-hidden">
+        <div className="rounded-lg overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-6 md:p-8">
             {/* Product Image Section */}
             <div className="space-y-4">
@@ -93,8 +90,6 @@ const ServicesDetails = () => {
                   }}
                 />
               </div>
-              
-              
             </div>
             
             {/* Product Details Section */}
@@ -110,9 +105,7 @@ const ServicesDetails = () => {
                   <span className="text-4xl font-bold text-gray-900">
                     {product.price}
                   </span>
-                  
                 </div>
-              
               </div>
               
               {/* Description */}
@@ -200,31 +193,18 @@ const ServicesDetails = () => {
                     </div>
                   </div>
                   
-                  {/* Add to Cart Button */}
-                  <button
-                    onClick={handleAddToCart}
+                  {/* Use AddToCartButton component for consistency */}
+                  <AddToCartButton 
+                    item={cartItem}
+                    type="service"
                     className="flex-1 bg-white text-primary px-8 py-3 rounded-sm border border-primary hover:bg-gray-900 hover:text-light-text transition-colors duration-300 text-lg font-medium flex items-center justify-center group"
-                  >
-                    <svg 
-                      className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    ADD TO CART - {product.price}
-                  </button>
+                    quantity={quantity}
+                  />
                 </div>
-                
-                
               </div>
-              
-              
             </div>
           </div>
         </div>
-        
       </div>
     </div>
   );

@@ -55,7 +55,7 @@ const Footer = () => {
           
           {/* Left Column - Products + Follow Us Section */}
           <div>
-            <p className='font-bold text-black text-xl font-serif mb-4'>SERVICES</p>
+            <p className='font-bold text-black text-xl    mb-4'>SERVICES</p>
             <ul className="space-y-2">
               {products.map((product, index) => (
                 <li key={index} className="hover:text-gray-600 transition-colors">
@@ -85,7 +85,7 @@ const Footer = () => {
 
           {/* Center Column - Bundles */}
           <div>
-            <p className='font-bold text-black text-xl font-serif mb-4'>BUNDLES</p>
+            <p className='font-bold text-black text-xl    mb-4'>BUNDLES</p>
             <ul className="space-y-2">
               {bundles.map((bundle, index) => (
                 <li key={index} className="hover:text-gray-600 transition-colors">
@@ -99,7 +99,7 @@ const Footer = () => {
           <div className="flex flex-col justify-between">
             {/* Policies Section - Top */}
             <div className="mb-8">
-              <p className='font-bold text-black text-xl font-serif mb-4'>POLICIES</p>
+              <p className='font-bold text-black text-xl    mb-4'>POLICIES</p>
               <div className="space-y-2">
                 <a 
                   href="#" 

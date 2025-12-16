@@ -54,8 +54,35 @@ const Checkout = () => {
       alert('Please fill in all required fields');
       return;
     }
+    
+    // Scroll to top before changing step
+    window.scrollTo({
+      top: 0,
+      behavior: 'instant' 
+    });
+    
+    // Set step to payment after scroll
     setStep('payment');
   };
+
+  // Add scroll to top for back button as well
+  const handleBackToShipping = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'instant'
+    });
+    setStep('shipping');
+  };
+
+  // Add scroll to top for success screen initialization
+  React.useEffect(() => {
+    if (step === 'success') {
+      window.scrollTo({
+        top: 0,
+        behavior: 'instant'
+      });
+    }
+  }, [step]);
 
   const PaymentForm = () => {
     const stripe = useStripe();
@@ -368,7 +395,7 @@ const Checkout = () => {
           <div className="flex gap-4 pt-4">
             <button
               type="button"
-              onClick={() => setStep('shipping')}
+              onClick={handleBackToShipping}
               className="px-6 py-3 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50"
             >
               ← Back to Information

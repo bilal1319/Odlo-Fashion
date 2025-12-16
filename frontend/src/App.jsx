@@ -6,22 +6,29 @@ import Bundles from './pages/Bundles';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import { CartProvider } from './context/Cartcontext';
+import ServicesDetails from './pages/ServicesDetails';
+import BundleDetails from './pages/BundlesDetails';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
     <CartProvider>
       <Router>
+        <ScrollToTop />
         <div className="min-h-screen">
           <Navbar />
+          <div className='mt-[65px]'>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/services" element={<Services />} />
-                       <Route path="/services" element={<Services />} />
+            <Route path="/services/:id" element={<ServicesDetails />} />
 
             <Route path="/bundles" element={<Bundles />} />
+            <Route path="/bundles/:id" element={<BundleDetails />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
           </Routes>
+          </div>
         </div>
       </Router>
     </CartProvider>
