@@ -10,8 +10,7 @@ const useAuthStore = create(
       error: null,
       isAuthenticated: false,
 
-      // Signin function
-    // In signin function, add more debugging:
+     
 signin: async (email, password, rememberMe = false) => {
   try {
     set({ isLoading: true, error: null });
@@ -135,7 +134,6 @@ signin: async (email, password, rememberMe = false) => {
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
-          // Clear store regardless of API call success
           set({ 
             user: null,
             isAuthenticated: false,
@@ -144,7 +142,6 @@ signin: async (email, password, rememberMe = false) => {
         }
       },
 
-      // Clear errors
       clearError: () => set({ error: null })
     }),
     {
