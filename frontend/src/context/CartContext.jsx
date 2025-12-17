@@ -7,17 +7,31 @@ export const useCart = () => useContext(CartContext);
 export const CartProvider = ({ children }) => {
   // Initialize cart from localStorage
   const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem('odlo-cart');
-    return savedCart ? JSON.parse(savedCart) : [];
+    try {
+      const savedCart = localStorage.getItem('odlo-cart');
+      if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        console.log('Loaded cart from localStorage:', parsedCart);
+        return parsedCart;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading cart from localStorage:', error);
+      return [];
+    }
   });
 
   const [cartCount, setCartCount] = useState(0);
 
   // Update cart count and save to localStorage whenever cart changes
   useEffect(() => {
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    setCartCount(totalItems);
-    localStorage.setItem('odlo-cart', JSON.stringify(cart));
+    try {
+      const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      setCartCount(totalItems);
+      localStorage.setItem('odlo-cart', JSON.stringify(cart));
+    } catch (error) {
+      console.error('Error saving cart to localStorage:', error);
+    }
   }, [cart]);
 
   const addToCart = (item) => {
@@ -29,11 +43,16 @@ export const CartProvider = ({ children }) => {
       if (existingItem) {
         return prevCart.map(cartItem =>
           cartItem.id === item.id && cartItem.type === item.type
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            ? { ...cartItem, quantity: (cartItem.quantity || 0) + 1 }
             : cartItem
         );
       } else {
-        return [...prevCart, { ...item, quantity: 1 }];
+        return [...prevCart, { 
+          ...item, 
+          quantity: 1,
+          // Ensure price is stored consistently
+          price: item.price || 0
+        }];
       }
     });
   };
@@ -62,11 +81,47 @@ export const CartProvider = ({ children }) => {
     setCart([]);
   };
 
+  // FIXED: This function now handles both string and number prices
   const getTotalPrice = () => {
-    return cart.reduce((total, item) => {
-      const price = parseFloat(item.price.replace('$', '')) || 0;
-      return total + (price * item.quantity);
-    }, 0);
+    try {
+      return cart.reduce((total, item) => {
+        // Handle price safely - it could be string or number
+        let price = 0;
+        
+        if (item.price === undefined || item.price === null) {
+          price = 0;
+        } else if (typeof item.price === 'string') {
+          // If price is a string like "$300", extract the number
+          // Remove any non-numeric characters except decimal point
+          price = parseFloat(item.price.replace(/[^0-9.-]+/g, "")) || 0;
+        } else if (typeof item.price === 'number') {
+          // If price is already a number, use it directly
+          price = item.price;
+        } else {
+          console.warn('Unexpected price type:', typeof item.price, item);
+          price = 0;
+        }
+        
+        const quantity = item.quantity || 0;
+        return total + (price * quantity);
+      }, 0);
+    } catch (error) {
+      console.error('Error calculating total price:', error);
+      return 0;
+    }
+  };
+
+  // Optional: Add a function to fix old cart data
+  const fixCartPrices = () => {
+    setCart(prevCart => 
+      prevCart.map(item => ({
+        ...item,
+        // Convert any string prices to numbers
+        price: typeof item.price === 'string' 
+          ? parseFloat(item.price.replace(/[^0-9.-]+/g, "")) || 0
+          : item.price
+      }))
+    );
   };
 
   return (
@@ -77,7 +132,8 @@ export const CartProvider = ({ children }) => {
       removeFromCart,
       updateQuantity,
       clearCart,
-      getTotalPrice
+      getTotalPrice,
+      fixCartPrices // Optional: expose for debugging
     }}>
       {children}
     </CartContext.Provider>

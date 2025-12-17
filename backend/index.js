@@ -30,7 +30,10 @@ import collectionsRoutes from "./src/routes/collections.route.js";
 import masterBundleRoutes from "./src/routes/masterBundle.routes.js";
 import bundleRoutes from "./src/routes/bundles.routes.js";
 import stripeWebhookRoutes from "./src/routes/stripeWebhook.route.js"; 
+import authRoutes from "./src/routes/auth.routes.js";
 
+
+app.use("/api/auth", authRoutes);
 app.use("/api/bundles", bundleRoutes);
 app.use("/api/master-bundles", masterBundleRoutes);
 app.use("/api/products", productsRoutes);

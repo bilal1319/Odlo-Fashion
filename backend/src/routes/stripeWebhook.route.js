@@ -3,12 +3,13 @@ import mongoose from "mongoose";
 import Stripe from "stripe";
 
 const router = express.Router();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
 
 // Check if we're in test mode
 const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
 
 router.post("/", async (req, res) => {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   const sig = req.headers["stripe-signature"];
 
   if (isTestMode) {
