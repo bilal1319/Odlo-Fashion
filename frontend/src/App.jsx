@@ -44,9 +44,9 @@ function Layout() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/services" element={<Services />} />
-          <Route path="/services/:id" element={<ServicesDetails />} />
+          <Route path="/service/:slug" element={<ServicesDetails />} />
           <Route path="/bundles" element={<Bundles />} />
-          <Route path="/bundles/:id" element={<BundleDetails />} />
+          <Route path="/bundle/:slug" element={<BundleDetails />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path='/signin' element={<Signin />} />

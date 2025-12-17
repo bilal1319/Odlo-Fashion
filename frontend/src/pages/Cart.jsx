@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { useCart } from "../context/Cartcontext";
+import { useEffect } from "react";
+import useProductsStore from "../store/productsSrtore";
 
 export default function Cart() {
   const { 
@@ -11,10 +13,51 @@ export default function Cart() {
     getTotalPrice 
   } = useCart();
 
+  const { getAllProducts } = useProductsStore();
+
+useEffect(() => {
+  // Fix any old cart items with string prices
+  const fixOldCartData = () => {
+    try {
+      const savedCart = localStorage.getItem('odlo-cart');
+      if (savedCart) {
+        const cart = JSON.parse(savedCart);
+        const needsFix = cart.some(item => typeof item.price === 'string');
+        if (needsFix) {
+          console.log('Fixing old cart data...');
+          const fixedCart = cart.map(item => ({
+            ...item,
+            price: typeof item.price === 'string' 
+              ? parseFloat(item.price.replace(/[^0-9.-]+/g, "")) || 0
+              : item.price
+          }));
+          localStorage.setItem('odlo-cart', JSON.stringify(fixedCart));
+          window.location.reload(); // Reload to use fixed data
+        }
+      }
+    } catch (error) {
+      console.error('Error fixing cart data:', error);
+    }
+  };
+  
+  fixOldCartData();
+}, []);
+
+  // Helper to format price for display
+  const formatPrice = (price) => {
+    if (price === undefined || price === null) return '$0';
+    if (typeof price === 'number') return `$${price}`;
+    if (typeof price === 'string') {
+      if (price.includes('$')) return price;
+      return `$${price}`;
+    }
+    return '$0';
+  };
+
   if (cartCount === 0) {
     return (
-      <div className="min-h-screen py-12 px-4 max-w-7xl mx-auto">
-        <h1 className="text-3xl   mb-8">Your Cart</h1>
+      <div className="min-h-screen py-12 px-4 max-w-7xl mx-auto pt-24">
+        <h1 className="text-3xl mb-8">Your Cart</h1>
         <div className="text-center py-12">
           <p className="text-gray-600 mb-4">Your cart is empty</p>
           <Link 
@@ -29,9 +72,9 @@ export default function Cart() {
   }
 
   return (
-    <div className="min-h-screen pt-16">
+    <div className="min-h-screen pt-24">
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl   mb-8">Your Cart ({cartCount} items)</h1>
+        <h1 className="text-3xl mb-8">Your Cart ({cartCount} items)</h1>
         
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Column - Cart Items (Scrollable) */}
@@ -46,6 +89,10 @@ export default function Cart() {
                         src={item.image} 
                         alt={item.title} 
                         className="w-32 h-32 object-cover flex-shrink-0 rounded border"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=200&h=200&fit=crop&q=80";
+                        }}
                       />
 
                       {/* Item Info */}
@@ -54,15 +101,25 @@ export default function Cart() {
                           <div>
                             <h3 className="font-semibold text-lg">{item.title}</h3>
                             <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                            <p className="text-sm text-gray-600 mt-2">
-                              <span className="font-medium">Use Case:</span> {item.useCase}
-                            </p>
+                            {item.useCase && (
+                              <p className="text-sm text-gray-600 mt-2">
+                                <span className="font-medium">Use Case:</span> {item.useCase}
+                              </p>
+                            )}
                             <p className="text-sm mt-2">
-                              <span className="font-medium">Type:</span> {item.type === "service" ? "Service" : "Bundle"}
+                              <span className="font-medium">Type:</span> {item.type === "product" ? "Product" : 
+                                                                         item.type === "bundle" ? "Bundle" : 
+                                                                         item.type === "service" ? "Service" : 
+                                                                         item.type}
                             </p>
                           </div>
                           <div className="text-right mt-2 sm:mt-0">
-                            <p className="font-semibold">{item.price}</p>
+                            <p className="font-semibold">{formatPrice(item.price)}</p>
+                            {item.originalPrice && (
+                              <p className="text-sm text-gray-500 line-through">
+                                {formatPrice(item.originalPrice)}
+                              </p>
+                            )}
                           </div>
                         </div>
                         
@@ -109,10 +166,8 @@ export default function Cart() {
           <div className="lg:w-1/3">
             <div className="bg-white border rounded-lg p-6 sticky top-24">
               <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
-
               
               <div className="space-y-3 mb-6">
-                
                 <div className="border-t pt-3">
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>

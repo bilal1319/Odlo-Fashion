@@ -1,29 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { servicesData } from '../data/servicesData';
 import AddToCartButton from '../components/AddToCartButton';
+import useProductsStore from '../store/productsSrtore';
 
 const ServicesDetails = () => {
-  const { id } = useParams();
+  const { slug } = useParams(); // Changed from id to slug
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [product, setProduct] = useState(null);
   
-  // Flatten all services data into a single array
-  const allServices = Object.values(servicesData).flat();
-  
-  // Find the product by ID
-  const product = allServices.find(service => service.id === parseInt(id));
-  
-  // Find the category this product belongs to
-  const findProductCategory = () => {
-    for (const [category, products] of Object.entries(servicesData)) {
-      if (products.some(p => p.id === parseInt(id))) {
-        return category;
+  // Get product by slug from store
+  const { 
+    getProductBySlug, 
+    clearProduct,
+    getProductsByCategoryId,
+    products 
+  } = useProductsStore();
+
+  // Fetch product data on component mount
+  useEffect(() => {
+    const loadProduct = async () => {
+      try {
+        setIsLoading(true);
+        await getProductBySlug(slug);
+      } catch (error) {
+        console.error("Failed to load product:", error);
+      } finally {
+        setIsLoading(false);
       }
+    };
+
+    if (slug) {
+      loadProduct();
     }
-    return "luxury-logo-collections";
-  };
-  
+
+    // Clean up when component unmounts
+    return () => {
+      clearProduct();
+    };
+  }, [slug, getProductBySlug, clearProduct]);
+
+  // Get product from store
+  useEffect(() => {
+    const fetchProductFromStore = () => {
+      // Try to find product in store products
+      const foundProduct = products.find(p => p.slug === slug);
+      if (foundProduct) {
+        setProduct(foundProduct);
+      }
+    };
+
+    fetchProductFromStore();
+  }, [slug, products]);
+
   // Handle quantity change
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value);
@@ -31,11 +61,23 @@ const ServicesDetails = () => {
       setQuantity(value);
     }
   };
-  
+
+  // If loading
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8 pt-24">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">Loading product details...</p>
+        </div>
+      </div>
+    );
+  }
+
   // If product not found
   if (!product) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8 pt-24">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Product Not Found</h1>
           <p className="text-gray-600 mb-6">The product you're looking for doesn't exist.</p>
@@ -50,16 +92,29 @@ const ServicesDetails = () => {
     );
   }
   
-  const category = findProductCategory();
-  
   // Create an array item with quantity for AddToCartButton
   const cartItem = {
     ...product,
+    id: product._id, // Use _id from backend
+    name: product.title,
     quantity: quantity
   };
-  
+
+  // Get placeholder image based on category
+  const getPlaceholderImage = (categoryId) => {
+    const placeholders = {
+      "luxury_logo_collections": "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=800&h=600&fit=crop&q=80",
+      "branding_identity_packs": "https://images.unsplash.com/photo-1634942537034-2531766767d1?w=800&h=600&fit=crop&q=80",
+      "social_media_kits": "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=800&h=600&fit=crop&q=80",
+      "posters_prints": "https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?w=800&h=600&fit=crop&q=80",
+      "mockups": "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=600&fit=crop&q=80",
+      "3d_fashion_assets": "https://images.unsplash.com/photo-1594736797933-d0401ba94693?w=800&h=600&fit=crop&q=80"
+    };
+    return placeholders[product.categoryId] || "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=800&h=600&fit=crop&q=80";
+  };
+
   return (
-    <div className="min-h-screen py-8 md:py-12">
+    <div className="min-h-screen py-8 md:py-12 pt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Back Button */}
@@ -81,12 +136,12 @@ const ServicesDetails = () => {
               {/* Main Image */}
               <div className="bg-gray-100 rounded-lg overflow-hidden">
                 <img
-                  src={product.image}
+                  src={product.image || product.thumbnail || getPlaceholderImage(product.categoryId)}
                   alt={product.title}
                   className="w-full h-80 md:h-96 object-cover hover:scale-105 transition-transform duration-300"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=800&h=600&fit=crop&q=80";
+                    e.target.src = getPlaceholderImage(product.categoryId);
                   }}
                 />
               </div>
@@ -103,8 +158,13 @@ const ServicesDetails = () => {
                 {/* Price */}
                 <div className="flex items-center space-x-4 mb-4">
                   <span className="text-4xl font-bold text-gray-900">
-                    {product.price}
+                    ${product.price}
                   </span>
+                  {product.originalPrice && (
+                    <span className="text-xl text-gray-500 line-through">
+                      ${product.originalPrice}
+                    </span>
+                  )}
                 </div>
               </div>
               
@@ -112,15 +172,7 @@ const ServicesDetails = () => {
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-3">Description</h2>
                 <p className="text-gray-700 leading-relaxed">
-                  {product.description}
-                </p>
-              </div>
-              
-              {/* Use Case */}
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">Perfect For</h2>
-                <p className="text-gray-700">
-                  {product.useCase}
+                  {product.description || product.shortDescription || "Premium digital asset for your branding needs."}
                 </p>
               </div>
               
@@ -128,38 +180,70 @@ const ServicesDetails = () => {
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-3">What's Included</h2>
                 <ul className="space-y-2 text-gray-700">
-                  <li className="flex items-center">
-                    <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    High-resolution files (300 DPI)
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Fully editable vector files
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Commercial license included
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Lifetime updates
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    24/7 Support
-                  </li>
+                  {/* Render features from backend if available, otherwise show defaults */}
+                  {product.features && product.features.length > 0 ? (
+                    product.features.map((feature, index) => (
+                      <li key={index} className="flex items-center">
+                        <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))
+                  ) : (
+                    <>
+                      <li className="flex items-center">
+                        <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        High-resolution files (300 DPI)
+                      </li>
+                      <li className="flex items-center">
+                        <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Fully editable vector files
+                      </li>
+                      <li className="flex items-center">
+                        <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Commercial license included
+                      </li>
+                      <li className="flex items-center">
+                        <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Lifetime updates
+                      </li>
+                      <li className="flex items-center">
+                        <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        24/7 Support
+                      </li>
+                    </>
+                  )}
                 </ul>
               </div>
+              
+              {/* Additional Info */}
+              {(product.tags || product.categoryId) && (
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="flex flex-wrap gap-2">
+                    {product.categoryId && (
+                      <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                        {product.categoryId.replace(/_/g, ' ').toUpperCase()}
+                      </span>
+                    )}
+                    {product.tags && product.tags.map((tag, index) => (
+                      <span key={index} className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {/* Quantity and Add to Cart */}
               <div className="pt-6 border-t border-gray-200">
@@ -196,8 +280,8 @@ const ServicesDetails = () => {
                   {/* Use AddToCartButton component for consistency */}
                   <AddToCartButton 
                     item={cartItem}
-                    type="service"
-                    className="flex-1 bg-white text-primary px-8 py-3 rounded-sm border border-primary hover:bg-gray-900 hover:text-light-text transition-colors duration-300 text-lg font-medium flex items-center justify-center group"
+                    type="product"
+                    className="flex-1 bg-primary text-white px-8 py-3 rounded-md hover:bg-gray-900 hover:text-light-text transition-colors duration-300 text-lg font-medium flex items-center justify-center group"
                     quantity={quantity}
                   />
                 </div>

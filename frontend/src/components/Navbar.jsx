@@ -2,56 +2,100 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/Cartcontext";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
+import useProductsStore from "../store/productsSrtore";
 
 export default function Navbar() {
   const [hoverMenu, setHoverMenu] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState(null);
   const { cartCount } = useCart();
+  
+  // Get categories from store
+  const { 
+    getCategories, 
+    categories, 
+    isCategoriesLoading 
+  } = useProductsStore();
 
-  const menuItems = [
-    {
-      name: "Home",
-      to: "/"
-    },
-    {
-      name: "Services",
-      to: "/services",
-      submenu: [
-        { name: "LUXURY LOGO COLLECTIONS", to: "/services#luxury-logo-collections" },
-        { name: "BRANDING & IDENTITY PACKS", to: "/services#branding-identity-packs" },
-        { name: "SOCIAL MEDIA KITS", to: "/services#social-media-kits" },
-        { name: "POSTERS & PRINTS", to: "/services#posters-prints" },
-        { name: "MOCKUPS", to: "/services#mockups" },
-        { name: "3D FASHION ASSETS", to: "/services#3d-fashion-assets" },
-      ],
-    },
-    {
-      name: "Bundles",
-      to: "/bundles",
-      submenu: [
-        { name: "Full Branding Studio Bundle", to: "/bundles" },
-        { name: "Poster Mega Pack", to: "/bundles" },
-        { name: "3D Accessories Collection", to: "/bundles" },
-        { name: "Social Media Master Bundle", to: "/bundles" },
-        { name: "The Luxury Mockup Collection", to: "/bundles" },
-        { name: "All in One Ultimate Bundle", to: "/bundles" },
-      ],
-    }
-  ];
+  // Fetch categories on component mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      await getCategories();
+    };
+    loadCategories();
+  }, [getCategories]);
+
+  // Convert backend category slug to URL hash
+  const convertToHash = (categorySlug) => {
+    if (!categorySlug) return '';
+    return categorySlug.replace(/_/g, '-');
+  };
+
+  // Get category name safely
+  const getCategoryName = (category) => {
+    if (!category) return 'CATEGORY';
+    return category.name || 
+           (category.slug ? category.slug.replace(/_/g, ' ').toUpperCase() : 'CATEGORY');
+  };
+
+  // Menu items with dynamic categories
+  const getMenuItems = () => {
+    // Default categories in case API fails or is loading
+    const defaultCategories = [
+      { slug: 'luxury_logo_collections', name: 'LUXURY LOGO COLLECTIONS' },
+      { slug: 'branding_identity_packs', name: 'BRANDING & IDENTITY PACKS' },
+      { slug: 'social_media_kits', name: 'SOCIAL MEDIA KITS' },
+      { slug: 'posters_prints', name: 'POSTERS & PRINTS' },
+      { slug: 'mockups', name: 'MOCKUPS' },
+      { slug: '3d_fashion_assets', name: '3D FASHION ASSETS' }
+    ];
+
+    // Use fetched categories or defaults
+    const displayCategories = categories.length > 0 ? categories : defaultCategories;
+
+    return [
+      {
+        name: "Home",
+        to: "/"
+      },
+      {
+        name: "Services",
+        to: "/services",
+        submenu: displayCategories.map(category => ({
+          name: getCategoryName(category),
+          to: `/services#${convertToHash(category.slug || category._id)}`
+        }))
+      },
+      {
+        name: "Bundles",
+        to: "/bundles",
+        submenu: [
+          { name: "Full Branding Studio Bundle", to: "/bundles" },
+          { name: "Poster Mega Pack", to: "/bundles" },
+          { name: "3D Accessories Collection", to: "/bundles" },
+          { name: "Social Media Master Bundle", to: "/bundles" },
+          { name: "The Luxury Mockup Collection", to: "/bundles" },
+          { name: "All in One Ultimate Bundle", to: "/bundles" },
+        ],
+      }
+    ];
+  };
+
+  const menuItems = getMenuItems();
+
+  // Handle category click
+  const handleCategoryClick = () => {
+    closeMobileMenu();
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Check if click is inside mobile menu container or hamburger button
-      const isInsideMobileMenu = event.target.closest(".mobile-menu-container");
-      const isHamburgerBtn = event.target.closest(".hamburger-btn");
-      const isDropdownToggle = event.target.closest(".dropdown-toggle");
-      const isChevronIcon = event.target.closest(".chevron-icon") || 
-                            event.target.closest("svg") || 
-                            event.target.closest("path");
-      
-      // Don't close if clicking inside mobile menu, hamburger, dropdown toggle, or chevron icon
-      if (!isInsideMobileMenu && !isHamburgerBtn && !isDropdownToggle && !isChevronIcon) {
+      if (
+        !event.target.closest(".mobile-menu-container") &&
+        !event.target.closest(".hamburger-btn") &&
+        !event.target.closest(".dropdown-toggle") &&
+        !event.target.closest(".mobile-dropdown-link")
+      ) {
         setIsMobileMenuOpen(false);
         setActiveSubMenu(null);
       }
@@ -97,27 +141,40 @@ export default function Navbar() {
                   onMouseLeave={() => setHoverMenu(null)}
                 >
                   <div className="relative">
-                    <Link to={item.to} className=" uppercase py-2 block relative">
+                    <Link to={item.to} className="uppercase py-2 block relative">
                       {item.name}
                       <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
                     </Link>
                   </div>
                   <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white text-black shadow-lg rounded-md p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
-                    style={{ width: item.name === "Bundles" ? "420px" : "264px" }}
+                    style={{ 
+                      width: item.name === "Bundles" ? "420px" : "264px",
+                      minHeight: isCategoriesLoading && item.name === "Services" ? "100px" : "auto"
+                    }}
                   >
-                    <ul className="space-y-2 text-sm">
-                      {item.submenu.map((sub, i) => (
-                        <li key={i} className="hover:text-gray-600 cursor-pointer">
-                          <Link to={sub.to} className="block">
-                            {sub.name}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
+                    {isCategoriesLoading && item.name === "Services" ? (
+                      <div className="flex items-center justify-center h-20">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
+                      </div>
+                    ) : (
+                      <ul className="space-y-2 text-sm">
+                        {item.submenu.map((sub, i) => (
+                          <li key={i} className="hover:text-gray-600 cursor-pointer">
+                            <Link 
+                              to={sub.to} 
+                              className="block hover:text-gray-800 transition-colors"
+                              onClick={() => item.name === "Services" && handleCategoryClick()}
+                            >
+                              {sub.name}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </li>
               ) : (
-                // Regular menu items (Home, Privacy Policy, Refund Policy)
+                // Regular menu items
                 <li key={index} className="relative cursor-default group">
                   <Link to={item.to} className="uppercase py-2 block relative">
                     {item.name}
@@ -132,7 +189,7 @@ export default function Navbar() {
         {/* CART RIGHT with Count Badge */}
         <Link 
           to="/cart" 
-          className="uppercase text-sm cursor-pointer items-center gap-2 flex"
+          className="uppercase text-sm cursor-pointer items-center gap-2 flex hover:opacity-80 transition-opacity"
         >
           Cart
           {cartCount > 0 && (
@@ -155,7 +212,7 @@ export default function Navbar() {
           {/* Mobile Cart */}
           <Link 
             to="/cart" 
-            className="text-sm uppercase flex items-center gap-2"
+            className="text-sm uppercase flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             Cart
             {cartCount > 0 && (
@@ -232,17 +289,14 @@ export default function Navbar() {
                     <>
                       <button
                         className="flex justify-between items-center w-full py-4 text-left text-lg dropdown-toggle"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSubMenu(item.name);
-                        }}
+                        onClick={() => toggleSubMenu(item.name)}
                       >
                         {item.name}
                         <span className="transition-transform duration-300">
                           {activeSubMenu === item.name ? (
-                            <FiChevronUp className="w-4 h-4 chevron-icon" />
+                            <FiChevronUp className="w-4 h-4" />
                           ) : (
-                            <FiChevronDown className="w-4 h-4 chevron-icon" />
+                            <FiChevronDown className="w-4 h-4" />
                           )}
                         </span>
                       </button>
@@ -252,25 +306,34 @@ export default function Navbar() {
                           activeSubMenu === item.name ? "max-h-96" : "max-h-0"
                         }`}
                       >
-                        <ul className="pl-4 pb-4 space-y-3 text-sm">
-                          {item.submenu.map((sub, i) => (
-                            <li key={i} className="text-gray-300 hover:text-white">
-                              <Link 
-                                to={sub.to}
-                                className="mobile-dropdown-link"
-                                onClick={closeMobileMenu}
-                              >
-                                {sub.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
+                        {isCategoriesLoading && item.name === "Services" ? (
+                          <div className="pl-4 pb-4 flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          </div>
+                        ) : (
+                          <ul className="pl-4 pb-4 space-y-3 text-sm">
+                            {item.submenu.map((sub, i) => (
+                              <li key={i} className="text-gray-300 hover:text-white">
+                                <Link 
+                                  to={sub.to}
+                                  className="mobile-dropdown-link block py-1"
+                                  onClick={() => {
+                                    handleCategoryClick();
+                                    closeMobileMenu();
+                                  }}
+                                >
+                                  {sub.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                     </>
                   ) : (
                     <Link 
                       to={item.to}
-                      className="py-4 text-lg block"
+                      className="py-4 text-lg block hover:text-gray-300 transition-colors"
                       onClick={closeMobileMenu}
                     >
                       {item.name}
