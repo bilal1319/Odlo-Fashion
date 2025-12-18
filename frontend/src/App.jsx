@@ -1,3 +1,4 @@
+// App.jsx
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import Navbar from './components/Navbar';
@@ -14,14 +15,15 @@ import BundleDetails from './pages/BundlesDetails';
 import ScrollToTop from './components/ScrollToTop';
 import Signin from './pages/Signin';
 import Signup from './pages/Signup';
-import AdminBoard from './pages/AdminBoard'
 import ServicesManagement from './pages/ServicesManagement';
-import BundlesManagement from './pages/BundlesManagement';import AdminLogin from './pages/AdminLogin';
+import BundlesManagement from './pages/BundlesManagement';
+import AdminLogin from './pages/AdminLogin';
 import AdminSignup from './pages/AdminSignup';
 import AdminDashboard from './pages/AdminDashboard';
 import useAuthStore from './store/authStore';
 import Success from './pages/Sucess';
-import useProductsStore from './store/productsSrtore'; // Import products store
+import useProductsStore from './store/productsSrtore';
+import AdminLayout from './components/AdminLayout'; // Import AdminLayout
 
 function App() {
   return (
@@ -35,7 +37,6 @@ function App() {
   );
 }
 
-// Separate component for initialization logic
 function AppInitializer() {
   const { checkAuth } = useAuthStore();
   const { getAllProducts, getCategories } = useProductsStore();
@@ -44,73 +45,73 @@ function AppInitializer() {
     const initializeApp = async () => {
       try {
         console.log('App: Initializing...');
-        
-        // 1. Check authentication
         await checkAuth();
-        
-        // 2. Pre-fetch products (with built-in caching)
-        // This will only fetch if cache is expired or no products exist
         console.log('App: Pre-fetching products...');
         await getAllProducts();
-        
-        // 3. Pre-fetch categories for navbar
         console.log('App: Pre-fetching categories...');
         await getCategories();
-        
         console.log('App: Initialization complete');
       } catch (error) {
         console.error('App: Initialization error:', error);
-        // Don't block the app - individual pages will handle their own loading states
       }
     };
 
-    // Start initialization with a small delay to not block initial render
     const initTimer = setTimeout(() => {
       initializeApp();
-    }, 300); // 300ms delay - gives time for initial page to render
+    }, 300);
 
     return () => clearTimeout(initTimer);
   }, [checkAuth, getAllProducts, getCategories]);
 
-  return null; // This component doesn't render anything
+  return null;
 }
 
 function Layout() {
   const location = useLocation();
   const { checkAuth } = useAuthStore();
   
-  // Page reload/refresh pe auth check
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
-  const noNavbarRoutes = ['/signin', '/signup', '/admin/login', '/admin/signup', '/admin/bundle', '/admin/dashboard', '/admin/service', '/checkout/success', '/checkout/cancel'];
-  const showNavbar = !noNavbarRoutes.includes(location.pathname);
+  const noNavbarRoutes = [
+    '/signin', '/signup', 
+    '/admin/login', '/admin/signup',
+    '/checkout/success', '/checkout/cancel',
+    '/admin','/admin/service','/admin/bundle'
+  ];
+  const showNavbar = !noNavbarRoutes.includes(location.pathname) && 
+                     !location.pathname.startsWith('/admin/');
 
   return (
     <div className="min-h-screen">
       {showNavbar && <Navbar />}
       <div className={showNavbar ? 'mt-[65px]' : ''}>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/services" element={<Services />} />
           <Route path="/service/:slug" element={<ServicesDetails />} />
           <Route path="/bundles" element={<Bundles />} />
           <Route path="/bundle/:slug" element={<BundleDetails />} />
           <Route path="/cart" element={<Cart />} />
-          {/* <Route path="/success" element={<Success />} /> */}
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/checkout/success" element={<CheckoutSuccess />} />
           <Route path="/checkout/cancel" element={<CheckoutCancel />} />
           <Route path='/signin' element={<Signin />} />
           <Route path='/signup' element={<Signup />} />
-          <Route path="/admin/service" element={<ServicesManagement />} />
-          <Route path="/admin/bundle" element={<BundlesManagement />} />
-          <Route path="/admin" element={<AdminBoard />}/>
-
+          
+          {/* Admin Auth Routes (without layout) */}
           <Route path='/admin/login' element={<AdminLogin />} />
           <Route path='/admin/signup' element={<AdminSignup />} />
-          <Route path='/admin/dashboard' element={<AdminDashboard />} />
+          
+          {/* Admin Routes with Sidebar Layout */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="service" element={<ServicesManagement />} />
+            <Route path="bundle" element={<BundlesManagement />} />
+            {/* Add more admin routes here */}
+          </Route>
         </Routes>
       </div>
     </div>

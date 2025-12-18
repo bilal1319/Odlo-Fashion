@@ -1,12 +1,10 @@
-// pages/AdminDashboard.jsx
-import React, { useState, useRef } from 'react';
+// components/AdminLayout.jsx
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Bars3Icon, XMarkIcon, BellIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import Sidebar from '../components/Sidebar';
-
-const AdminBoard = () => {
+import { Bars3Icon, BellIcon } from '@heroicons/react/24/outline';
+import Sidebar from './Sidebar';
+const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const mainContentRef = useRef(null);
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -27,8 +25,6 @@ const AdminBoard = () => {
                 >
                   <Bars3Icon className="h-6 w-6" />
                 </button>
-                
-              
               </div>
 
               {/* Right Side - User Menu */}
@@ -53,10 +49,7 @@ const AdminBoard = () => {
         </header>
 
         {/* Main Content */}
-        <main 
-          ref={mainContentRef}
-          className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100"
-        >
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
           <div className="max-w-7xl mx-auto">
             <Outlet /> {/* Child routes render here */}
           </div>
@@ -66,4 +59,4 @@ const AdminBoard = () => {
   );
 };
 
-export default AdminBoard;
+export default AdminLayout;

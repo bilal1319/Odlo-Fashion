@@ -31,6 +31,7 @@ const BundlesManagement = () => {
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingBundle, setEditingBundle] = useState(null);
   const modalRef = useRef(null);
 
   const bundleTypes = [
@@ -91,11 +92,48 @@ const BundlesManagement = () => {
     };
     setBundles([newBundle, ...bundles]);
     setIsModalOpen(false);
+    setEditingBundle(null);
+  };
+
+  const handleEditBundle = (bundleData) => {
+    setBundles(bundles.map(bundle => 
+      bundle.id === bundleData.id ? { 
+        ...bundle, 
+        ...bundleData,
+        itemsCount: bundleData.items ? bundleData.items.split(',').length : bundle.itemsCount,
+        isMasterBundle: bundleData.type === 'ultimate'
+      } : bundle
+    ));
+    setIsModalOpen(false);
+    setEditingBundle(null);
   };
 
   const getBundleTypeColor = (type) => {
     const typeObj = bundleTypes.find(t => t.id === type);
     return typeObj ? typeObj.color : 'bg-gray-100 text-gray-800';
+  };
+
+  const handleEditClick = (bundle) => {
+    setEditingBundle(bundle);
+    setIsModalOpen(true);
+  };
+
+  const handleCreateClick = () => {
+    setEditingBundle(null);
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setEditingBundle(null);
+  };
+
+  const handleModalSave = (bundleData) => {
+    if (editingBundle) {
+      handleEditBundle(bundleData);
+    } else {
+      handleCreateBundle(bundleData);
+    }
   };
 
   return (
@@ -107,7 +145,7 @@ const BundlesManagement = () => {
           <p className="text-gray-500 mt-1">Manage your product bundles and special offers</p>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleCreateClick}
           className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg font-semibold hover:from-indigo-500 hover:to-indigo-400 shadow-md transition"
         >
           <PlusIcon className="h-5 w-5 mr-2" /> Create Bundle
@@ -261,9 +299,19 @@ const BundlesManagement = () => {
                       </button>
                     </td>
                     <td className="px-6 py-4 flex gap-2">
-                      <button className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"><EyeIcon className="h-5 w-5" /></button>
-                      <button className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition"><PencilIcon className="h-5 w-5" /></button>
-                      <button onClick={() => handleDelete(bundle.id)} className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition"><TrashIcon className="h-5 w-5" /></button>
+                     
+                      <button 
+                        onClick={() => handleEditClick(bundle)}
+                        className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition"
+                      >
+                        <PencilIcon className="h-5 w-5" />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(bundle.id)} 
+                        className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -273,11 +321,15 @@ const BundlesManagement = () => {
         )}
       </div>
 
-      {/* Create Bundle Modal */}
+      {/* Create/Edit Bundle Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div ref={modalRef} className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <CreateBundleModal onClose={() => setIsModalOpen(false)} onCreate={handleCreateBundle} />
+            <CreateBundleModal 
+              onClose={handleModalClose} 
+              onCreate={handleModalSave} 
+              bundle={editingBundle}
+            />
           </div>
         </div>
       )}
