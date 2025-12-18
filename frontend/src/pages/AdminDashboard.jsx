@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   ShoppingBagIcon, 
   UserCircleIcon, 
   ArrowRightOnRectangleIcon,
   MagnifyingGlassIcon,
-  FunnelIcon
+  FunnelIcon,
+  BellAlertIcon
 } from '@heroicons/react/24/outline';
 import axiosInstance from '../utils/axiosInstance';
+import { io } from 'socket.io-client';
+
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -16,12 +20,10 @@ const AdminDashboard = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [isConnected, setIsConnected] = useState(false);
+  const [newOrderAlert, setNewOrderAlert] = useState(null);
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const response = await axiosInstance.get('/orders/all');
       if (response.data.success) {
@@ -36,7 +38,55 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  // WebSocket connection
+  useEffect(() => {
+    const socket = io(SOCKET_URL, {
+      withCredentials: true
+    });
+
+    socket.on('connect', () => {
+      console.log('🔌 Connected to WebSocket');
+      setIsConnected(true);
+      socket.emit('join-admin');
+    });
+
+    socket.on('disconnect', () => {
+      console.log('🔌 Disconnected from WebSocket');
+      setIsConnected(false);
+    });
+
+    socket.on('new-order', (order) => {
+      console.log('📦 New order received:', order);
+      setOrders(prev => {
+        const exists = prev.find(o => o._id === order._id);
+        if (exists) return prev;
+        return [order, ...prev];
+      });
+      setNewOrderAlert(order);
+      setTimeout(() => setNewOrderAlert(null), 5000);
+    });
+
+    socket.on('order-status-changed', (updatedOrder) => {
+      console.log('📝 Order status changed:', updatedOrder);
+      setOrders(prev => 
+        prev.map(order => 
+          order._id === updatedOrder._id ? updatedOrder : order
+        )
+      );
+      setNewOrderAlert({ ...updatedOrder, isStatusChange: true });
+      setTimeout(() => setNewOrderAlert(null), 5000);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
@@ -77,6 +127,28 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* New Order Alert */}
+      {newOrderAlert && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-md animate-pulse ${
+          newOrderAlert.isStatusChange ? 'bg-blue-500' : 'bg-green-500'
+        } text-white`}>
+          <div className="flex items-center space-x-3">
+            <BellAlertIcon className="h-6 w-6" />
+            <div>
+              <p className="font-semibold">
+                {newOrderAlert.isStatusChange ? 'Order Status Updated!' : 'New Order Received!'}
+              </p>
+              <p className="text-sm opacity-90">
+                {newOrderAlert.email} - ${newOrderAlert.amountPaid?.toFixed(2)}
+              </p>
+              {newOrderAlert.isStatusChange && (
+                <p className="text-xs opacity-75">Status: {newOrderAlert.status?.toUpperCase()}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -85,7 +157,15 @@ const AdminDashboard = () => {
               <ShoppingBagIcon className="h-8 w-8 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-500">Odlo Fashion</p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-sm text-gray-500">Odlo Fashion</p>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                    isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    <span className={`w-2 h-2 mr-1 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                    {isConnected ? 'Live' : 'Offline'}
+                  </span>
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-4">

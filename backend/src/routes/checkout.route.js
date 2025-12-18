@@ -1,6 +1,7 @@
 import express from "express";
 import Stripe from "stripe";
 import Order from '../models/order.model.js';
+import { emitNewOrder } from '../socket.js';
 
 const router = express.Router();
 
@@ -129,6 +130,9 @@ router.post("/prepare", async (req, res) => {
         status: 'pending',
         testMode: process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_')
       });
+
+      // Emit WebSocket event for new pending order
+      emitNewOrder(newOrder.toObject());
 
       console.log(`✅ Created pending order for session: ${session.id}, Order ID: ${newOrder._id}`);
     } catch (orderError) {
