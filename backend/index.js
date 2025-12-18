@@ -29,13 +29,19 @@ import categoriesRoutes from "./src/routes/categories.routes.js";
 import collectionsRoutes from "./src/routes/collections.route.js";
 import masterBundleRoutes from "./src/routes/masterBundle.routes.js";
 import bundleRoutes from "./src/routes/bundles.routes.js";
-import stripeWebhookRoutes from "./src/routes/stripeWebhook.route.js"; 
+import stripeWebhookRoutes from "./src/routes/stripeWebhook.route.js";
+import authRoutes from "./src/routes/auth.routes.js";
+import checkoutRoutes from "./src/routes/checkout.route.js";
+import orderRoutes from "./src/routes/order.routes.js";
 
 app.use("/api/bundles", bundleRoutes);
 app.use("/api/master-bundles", masterBundleRoutes);
 app.use("/api/products", productsRoutes);
 app.use("/api/categories", categoriesRoutes);
 app.use("/api/collections", collectionsRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/checkout", checkoutRoutes);
+app.use("/api/orders", orderRoutes);
 
 // Webhook route - must be mounted AFTER the raw body middleware
 app.use("/api/webhooks/stripe", stripeWebhookRoutes);

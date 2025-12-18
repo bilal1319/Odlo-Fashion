@@ -1,14 +1,11 @@
 import React, { useState } from "react";
-import { LockClosedIcon, CreditCardIcon, UserIcon } from "@heroicons/react/24/solid";
-import { useCart } from "../context/Cartcontext";
+import { LockClosedIcon, CreditCardIcon } from "@heroicons/react/24/solid";
+import { useCart } from "../context/CartContext";
 import { Link } from "react-router-dom";
-import { CardElement, useStripe, useElements, Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
-
-const stripePromise = loadStripe('pk_test_YOUR_PUBLISHABLE_KEY_HERE');
+import axiosInstance from "../utils/axiosInstance";
 
 const Checkout = () => {
-  const { cart, getTotalPrice } = useCart();
+  const { cart, getTotalPrice, clearCart } = useCart();
   const [step, setStep] = useState('shipping');
   const [formData, setFormData] = useState({
     firstName: '',
@@ -21,10 +18,8 @@ const Checkout = () => {
     phone: '',
     country: 'Pakistan'
   });
-  const [paymentError, setPaymentError] = useState('');
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [orderNumber, setOrderNumber] = useState('');
+  const [error, setError] = useState('');
 
   const pakistanCities = [
     "Karachi", "Lahore", "Islamabad", "Rawalpindi", "Faisalabad", 
@@ -48,413 +43,66 @@ const Checkout = () => {
 
   const handleShippingSubmit = (e) => {
     e.preventDefault();
-    // Validate shipping form
+    
     if (!formData.firstName || !formData.lastName || !formData.email || 
         !formData.address || !formData.city || !formData.phone) {
       alert('Please fill in all required fields');
       return;
     }
     
-    // Scroll to top before changing step
-    window.scrollTo({
-      top: 0,
-      behavior: 'instant' 
-    });
-    
-    // Set step to payment after scroll
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setStep('payment');
   };
 
-  // Add scroll to top for back button as well
   const handleBackToShipping = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'instant'
-    });
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setStep('shipping');
   };
 
-  // Add scroll to top for success screen initialization
-  React.useEffect(() => {
-    if (step === 'success') {
-      window.scrollTo({
-        top: 0,
-        behavior: 'instant'
+  const handlePayment = async () => {
+    setProcessing(true);
+    setError('');
+
+    try {
+      // Prepare cart items for Stripe
+      const items = cart.map(item => ({
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        price: item.price,
+        quantity: item.quantity || 1
+      }));
+
+      // Call backend to create Stripe checkout session
+      const response = await axiosInstance.post('/checkout/prepare', {
+        items,
+        email: formData.email
       });
+
+      if (response.data.success && response.data.checkoutUrl) {
+        // Clear cart before redirecting to Stripe
+        clearCart();
+        // Redirect to Stripe Checkout
+        window.location.href = response.data.checkoutUrl;
+      } else {
+        setError('Failed to initialize payment. Please try again.');
+        setProcessing(false);
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      setError(err.response?.data?.message || 'Payment initialization failed. Please try again.');
+      setProcessing(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (step === 'payment') {
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
   }, [step]);
 
-  const PaymentForm = () => {
-    const stripe = useStripe();
-    const elements = useElements();
-    const [paymentDetails, setPaymentDetails] = useState({
-      cardNumber: '',
-      expiryDate: '',
-      cvv: '',
-      cardHolderName: '',
-    });
-    const [errors, setErrors] = useState({});
-
-    const handlePaymentChange = (e) => {
-      const { name, value } = e.target;
-      
-      // Format card number with spaces
-      if (name === 'cardNumber') {
-        const formatted = value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
-        setPaymentDetails({
-          ...paymentDetails,
-          [name]: formatted
-        });
-        
-        // Validate card number (basic Luhn algorithm)
-        if (value.replace(/\s/g, '').length >= 16) {
-          const cardNumber = value.replace(/\s/g, '');
-          if (!isValidCardNumber(cardNumber)) {
-            setErrors({ ...errors, cardNumber: 'Invalid card number' });
-          } else {
-            const { cardNumber: _, ...newErrors } = errors;
-            setErrors(newErrors);
-          }
-        }
-      } 
-      // Format expiry date (MM/YY)
-      else if (name === 'expiryDate') {
-        let formatted = value.replace(/\D/g, '');
-        if (formatted.length >= 2) {
-          formatted = formatted.substring(0, 2) + '/' + formatted.substring(2, 4);
-        }
-        setPaymentDetails({
-          ...paymentDetails,
-          [name]: formatted
-        });
-        
-        // Validate expiry date
-        if (formatted.length === 5) {
-          const [month, year] = formatted.split('/');
-          const currentDate = new Date();
-          const currentYear = currentDate.getFullYear() % 100;
-          const currentMonth = currentDate.getMonth() + 1;
-          
-          if (month < 1 || month > 12) {
-            setErrors({ ...errors, expiryDate: 'Invalid month' });
-          } else if (year < currentYear || (year == currentYear && month < currentMonth)) {
-            setErrors({ ...errors, expiryDate: 'Card expired' });
-          } else {
-            const { expiryDate: _, ...newErrors } = errors;
-            setErrors(newErrors);
-          }
-        }
-      }
-      else if (name === 'cvv') {
-        const formatted = value.replace(/\D/g, '').substring(0, 4);
-        setPaymentDetails({
-          ...paymentDetails,
-          [name]: formatted
-        });
-        
-        if (formatted.length < 3) {
-          setErrors({ ...errors, cvv: 'Invalid CVV' });
-        } else {
-          const { cvv: _, ...newErrors } = errors;
-          setErrors(newErrors);
-        }
-      }
-      else {
-        setPaymentDetails({
-          ...paymentDetails,
-          [name]: value
-        });
-      }
-    };
-
-    const isValidCardNumber = (number) => {
-      // Basic Luhn algorithm implementation
-      let sum = 0;
-      let shouldDouble = false;
-      
-      for (let i = number.length - 1; i >= 0; i--) {
-        let digit = parseInt(number.charAt(i));
-        
-        if (shouldDouble) {
-          digit *= 2;
-          if (digit > 9) digit -= 9;
-        }
-        
-        sum += digit;
-        shouldDouble = !shouldDouble;
-      }
-      
-      return (sum % 10) === 0;
-    };
-
-    const validateForm = () => {
-      const newErrors = {};
-      
-      if (!paymentDetails.cardNumber.replace(/\s/g, '')) {
-        newErrors.cardNumber = 'Card number is required';
-      } else if (paymentDetails.cardNumber.replace(/\s/g, '').length < 16) {
-        newErrors.cardNumber = 'Card number must be 16 digits';
-      } else if (!isValidCardNumber(paymentDetails.cardNumber.replace(/\s/g, ''))) {
-        newErrors.cardNumber = 'Invalid card number';
-      }
-      
-      if (!paymentDetails.expiryDate) {
-        newErrors.expiryDate = 'Expiry date is required';
-      } else if (paymentDetails.expiryDate.length !== 5) {
-        newErrors.expiryDate = 'Invalid expiry date (MM/YY)';
-      }
-      
-      if (!paymentDetails.cvv) {
-        newErrors.cvv = 'CVV is required';
-      } else if (paymentDetails.cvv.length < 3) {
-        newErrors.cvv = 'CVV must be at least 3 digits';
-      }
-      
-      if (!paymentDetails.cardHolderName.trim()) {
-        newErrors.cardHolderName = 'Card holder name is required';
-      }
-      
-      setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
-    };
-
-    const handlePaymentSubmit = async (e) => {
-      e.preventDefault();
-      
-      if (!validateForm()) {
-        return;
-      }
-      
-      if (!stripe) {
-        setPaymentError('Payment system not available');
-        return;
-      }
-
-      setProcessing(true);
-      setPaymentError('');
-
-      // Convert our custom form data to Stripe CardElement format
-      const cardDetails = {
-        number: paymentDetails.cardNumber.replace(/\s/g, ''),
-        exp_month: paymentDetails.expiryDate.split('/')[0],
-        exp_year: '20' + paymentDetails.expiryDate.split('/')[1],
-        cvc: paymentDetails.cvv
-      };
-
-      // Create a Stripe card element manually
-      const cardElement = elements.getElement(CardElement);
-      
-      // Create payment method with card details
-      const { error, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: {
-          number: cardDetails.number,
-          exp_month: cardDetails.exp_month,
-          exp_year: cardDetails.exp_year,
-          cvc: cardDetails.cvc,
-        },
-        billing_details: {
-          name: paymentDetails.cardHolderName || `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-          phone: formData.phone,
-          address: {
-            line1: formData.address,
-            city: formData.city,
-            state: formData.state,
-            postal_code: formData.zipCode,
-            country: 'PK'
-          }
-        }
-      });
-
-      if (error) {
-        setPaymentError(error.message);
-        setProcessing(false);
-        return;
-      }
-
-      // Simulate successful payment
-      setTimeout(() => {
-        const randomOrderNumber = 'ORD' + Math.floor(Math.random() * 1000000);
-        setOrderNumber(randomOrderNumber);
-        setPaymentSuccess(true);
-        setStep('success');
-        setProcessing(false);
-      }, 2000);
-    };
-
-    return (
-      <div className="mt-8">
-        <h3 className="text-xl font-bold mb-6">Payment Details</h3>
-        <form onSubmit={handlePaymentSubmit} className="space-y-6 max-w-lg">
-          {/* Card Holder Name */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              <UserIcon className="h-5 w-5 inline mr-2 text-gray-600" />
-              Card Holder Name *
-            </label>
-            <input
-              type="text"
-              name="cardHolderName"
-              value={paymentDetails.cardHolderName}
-              onChange={handlePaymentChange}
-              placeholder="Name on card"
-              className={`w-full border ${errors.cardHolderName ? 'border-red-500' : 'border-gray-300'} rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500`}
-            />
-            {errors.cardHolderName && (
-              <p className="text-red-500 text-xs mt-1">{errors.cardHolderName}</p>
-            )}
-          </div>
-
-          {/* Card Number */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              <CreditCardIcon className="h-5 w-5 inline mr-2 text-gray-600" />
-              Card Number *
-            </label>
-            <input
-              type="text"
-              name="cardNumber"
-              value={paymentDetails.cardNumber}
-              onChange={handlePaymentChange}
-              placeholder="1234 5678 9012 3456"
-              maxLength="19"
-              className={`w-full border ${errors.cardNumber ? 'border-red-500' : 'border-gray-300'} rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500`}
-            />
-            {errors.cardNumber && (
-              <p className="text-red-500 text-xs mt-1">{errors.cardNumber}</p>
-            )}
-          </div>
-
-          {/* Expiry Date and CVV */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Expiry Date *
-              </label>
-              <input
-                type="text"
-                name="expiryDate"
-                value={paymentDetails.expiryDate}
-                onChange={handlePaymentChange}
-                placeholder="MM/YY"
-                maxLength="5"
-                className={`w-full border ${errors.expiryDate ? 'border-red-500' : 'border-gray-300'} rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500`}
-              />
-              {errors.expiryDate && (
-                <p className="text-red-500 text-xs mt-1">{errors.expiryDate}</p>
-              )}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                CVV *
-              </label>
-              <input
-                type="password"
-                name="cvv"
-                value={paymentDetails.cvv}
-                onChange={handlePaymentChange}
-                placeholder="123"
-                maxLength="4"
-                className={`w-full border ${errors.cvv ? 'border-red-500' : 'border-gray-300'} rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500`}
-              />
-              {errors.cvv && (
-                <p className="text-red-500 text-xs mt-1">{errors.cvv}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Accepted Cards */}
-          <div className="mt-4">
-            <p className="text-sm text-gray-600 mb-2">We accept</p>
-            <div className="flex space-x-2">
-              <div className="w-10 h-6 bg-blue-100 border border-blue-300 rounded flex items-center justify-center">
-                <span className="text-xs font-bold text-blue-800">VISA</span>
-              </div>
-              <div className="w-10 h-6 bg-yellow-100 border border-yellow-300 rounded flex items-center justify-center">
-                <span className="text-xs font-bold text-yellow-800">MC</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Order Summary */}
-          <div className="border-t pt-6">
-            <div className="flex justify-between font-bold text-lg">
-              <span>Total</span>
-              <span>${getTotalPrice().toFixed(2)}</span>
-            </div>
-          </div>
-
-          {paymentError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {paymentError}
-            </div>
-          )}
-
-          <div className="flex gap-4 pt-4">
-            <button
-              type="button"
-              onClick={handleBackToShipping}
-              className="px-6 py-3 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50"
-            >
-              ← Back to Information
-            </button>
-            <button
-              type="submit"
-              disabled={processing}
-              className={`flex-1 py-3 px-6 rounded-md text-sm font-medium ${
-                processing 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-black hover:bg-gray-800'
-              } text-white`}
-            >
-              {processing ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing Payment...
-                </>
-              ) : `Pay $${getTotalPrice().toFixed(2)}`}
-            </button>
-          </div>
-        </form>
-      </div>
-    );
-  };
-
-  const SuccessScreen = () => (
-    <div className="text-center py-12">
-      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-        </svg>
-      </div>
-      <h2 className="text-2xl font-bold mb-4">Payment Successful!</h2>
-      <p className="text-gray-600 mb-2">Thank you for your order</p>
-      <p className="text-sm text-gray-500 mb-6">Order #{orderNumber}</p>
-      <div className="space-y-4 max-w-md mx-auto">
-        <Link
-          to="/"
-          className="block bg-black text-white py-3 px-6 rounded-md hover:bg-gray-800 text-sm font-medium"
-        >
-          Continue Shopping
-        </Link>
-        <button
-          onClick={() => window.print()}
-          className="block w-full border border-gray-300 py-3 px-6 rounded-md hover:bg-gray-50 text-sm font-medium"
-        >
-          Print Receipt
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Main Content with top padding for fixed navbar */}
       <div className="pt-16 px-4 md:px-6 lg:px-8">
         {/* Header */}
         <div className="flex space-x-2 mb-8">
@@ -484,10 +132,10 @@ const Checkout = () => {
         {/* Main Content Layout */}
         <div className="flex flex-col lg:flex-row gap-8 pb-8">
           {/* Left Column - Main Form */}
-          <div className="lg:w-2/3  p-6">
+          <div className="lg:w-2/3 p-6">
             {step === 'shipping' && (
               <div>
-                <h3 className="text-xl font-bold mb-6">Information</h3>
+                <h3 className="text-xl font-bold mb-6">Shipping Information</h3>
                 <form onSubmit={handleShippingSubmit} className="space-y-4 max-w-2xl">
                   {/* Name Row */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -625,17 +273,76 @@ const Checkout = () => {
             )}
 
             {step === 'payment' && (
-              <Elements stripe={stripePromise}>
-                <PaymentForm />
-              </Elements>
-            )}
+              <div className="mt-8">
+                <h3 className="text-xl font-bold mb-6">Payment</h3>
+                <div className="max-w-lg">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-start">
+                      <CreditCardIcon className="h-6 w-6 text-blue-600 mt-0.5 mr-3" />
+                      <div>
+                        <h4 className="font-semibold text-blue-900 mb-1">Secure Payment with Stripe</h4>
+                        <p className="text-sm text-blue-800">
+                          You'll be redirected to Stripe's secure checkout page to complete your payment.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-            {step === 'success' && <SuccessScreen />}
+                  <div className="border-t pt-6">
+                    <div className="flex justify-between font-bold text-lg mb-6">
+                      <span>Total</span>
+                      <span>${getTotalPrice().toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+                      {error}
+                    </div>
+                  )}
+
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      type="button"
+                      onClick={handleBackToShipping}
+                      className="px-6 py-3 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50"
+                      disabled={processing}
+                    >
+                      ← Back to Information
+                    </button>
+                    <button
+                      onClick={handlePayment}
+                      disabled={processing}
+                      className={`flex-1 py-3 px-6 rounded-md text-sm font-medium ${
+                        processing 
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-black hover:bg-gray-800'
+                      } text-white`}
+                    >
+                      {processing ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Redirecting to Stripe...
+                        </>
+                      ) : (
+                        <>
+                          <LockClosedIcon className="h-5 w-5 inline mr-2" />
+                          Proceed to Payment
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column - Cart Summary */}
           <div className="lg:w-1/3">
-            <div className=" border-3 rounded-lg  p-6 sticky top-24">
+            <div className="border-3 rounded-lg p-6 sticky top-24">
               <h3 className="text-xl font-bold mb-6">Order Summary</h3>
               
               <div className="space-y-4 mb-6 max-h-80 overflow-y-auto pr-2">
@@ -649,6 +356,7 @@ const Checkout = () => {
                           <div>
                             <h4 className="font-medium text-sm">{item.title}</h4>
                             <p className="text-xs text-gray-600 mt-1">{item.useCase}</p>
+                            <p className="text-sm font-semibold mt-1">${item.price}</p>
                           </div>
                           {item.quantity > 1 && (
                             <div className="flex-shrink-0">
@@ -658,7 +366,6 @@ const Checkout = () => {
                             </div>
                           )}
                         </div>
-                       
                       </div>
                     </div>
                   ))
@@ -666,7 +373,6 @@ const Checkout = () => {
               </div>
               
               <div className="space-y-3">
-                
                 <div className="flex justify-between font-bold text-lg pt-2">
                   <span>Total</span>
                   <span>${getTotalPrice().toFixed(2)}</span>
