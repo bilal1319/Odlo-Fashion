@@ -43,7 +43,7 @@ const Signup = () => {
 
     try {
 await signup({ username: fullName, email, password });
-      navigate('/'); // Success pe home page pe redirect
+      navigate('/');
     } catch (err) {
       console.error('Signup error:', err);
     }
@@ -59,8 +59,6 @@ await signup({ username: fullName, email, password });
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Signup</h2>
                 <p className="text-gray-600">Create your account to access our services</p>
               </div>
-
-              {/* Error Display */}
               {(error || localError) && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-red-600 text-sm">{error || localError}</p>

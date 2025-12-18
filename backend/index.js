@@ -1,13 +1,14 @@
 // In your app.js (main server file)
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+//import dotenv from "dotenv";
+import "dotenv/config";
 import { connectDB } from "./src/db.js";
 import cookieParser from "cookie-parser";
-dotenv.config();
-
+//dotenv.config();
 const app = express();
-
+app.use(express.json());
+app.use(cookieParser())
 // IMPORTANT: Apply raw body parser BEFORE json() for webhook routes
 app.use("/api/webhooks/stripe", express.raw({ type: "application/json" }));
 
@@ -16,8 +17,7 @@ app.use(cors({
   origin: "http://localhost:5173",
   credentials: true,
 }));
-app.use(express.json());
-app.use(cookieParser())
+
 // Test Route
 app.get("/", (req, res) => {
   res.send("API is running...");
@@ -34,14 +34,15 @@ import authRoutes from "./src/routes/auth.routes.js";
 
 
 app.use("/api/auth", authRoutes);
+import stripeRoutes from './src/routes/Stripe.route.js'
 app.use("/api/bundles", bundleRoutes);
 app.use("/api/master-bundles", masterBundleRoutes);
 app.use("/api/products", productsRoutes);
 app.use("/api/categories", categoriesRoutes);
 app.use("/api/collections", collectionsRoutes);
+app.use("/api/stripe", stripeRoutes);
 
 // Webhook route - must be mounted AFTER the raw body middleware
-app.use("/api/webhooks/stripe", stripeWebhookRoutes);
 
 const PORT = process.env.PORT || 8000;
 

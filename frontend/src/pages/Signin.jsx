@@ -29,9 +29,8 @@ const Signin = () => {
 
     try {
       await signin(email, password, rememberMe);
-      navigate('/'); // Success pe home page pe redirect
+      navigate('/'); 
     } catch (err) {
-      // Error already set in store
       console.error('Login error:', err);
     }
   };

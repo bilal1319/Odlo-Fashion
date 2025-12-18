@@ -69,14 +69,14 @@ export default function Navbar() {
       {
         name: "Bundles",
         to: "/bundles",
-        submenu: [
-          { name: "Full Branding Studio Bundle", to: "/bundles" },
-          { name: "Poster Mega Pack", to: "/bundles" },
-          { name: "3D Accessories Collection", to: "/bundles" },
-          { name: "Social Media Master Bundle", to: "/bundles" },
-          { name: "The Luxury Mockup Collection", to: "/bundles" },
-          { name: "All in One Ultimate Bundle", to: "/bundles" },
-        ],
+        // submenu: [
+        //   { name: "Full Branding Studio Bundle", to: "/bundles" },
+        //   { name: "Poster Mega Pack", to: "/bundles" },
+        //   { name: "3D Accessories Collection", to: "/bundles" },
+        //   { name: "Social Media Master Bundle", to: "/bundles" },
+        //   { name: "The Luxury Mockup Collection", to: "/bundles" },
+        //   { name: "All in One Ultimate Bundle", to: "/bundles" },
+        // ],
       }
     ];
   };

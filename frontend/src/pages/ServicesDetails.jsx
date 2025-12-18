@@ -249,7 +249,7 @@ const ServicesDetails = () => {
               <div className="pt-6 border-t border-gray-200">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
                   {/* Quantity Selector */}
-                  <div className="flex items-center space-x-4">
+                  {/* <div className="flex items-center space-x-4">
                     <label htmlFor="quantity" className="text-gray-700 font-medium">
                       Quantity:
                     </label>
@@ -275,13 +275,13 @@ const ServicesDetails = () => {
                         +
                       </button>
                     </div>
-                  </div>
+                  </div> */}
                   
                   {/* Use AddToCartButton component for consistency */}
                   <AddToCartButton 
                     item={cartItem}
                     type="product"
-                    className="flex-1 bg-primary text-white px-8 py-3 rounded-md hover:bg-gray-900 hover:text-light-text transition-colors duration-300 text-lg font-medium flex items-center justify-center group"
+                    className="flex-1  px-8 py-3 font-bold rounded-md transition-all duration-300 bg-white text-primary hover:bg-gray-900 hover:text-white hover:scale-105 active:scale-95 border border-gray-300"
                     quantity={quantity}
                   />
                 </div>
