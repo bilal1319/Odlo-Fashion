@@ -1,10 +1,12 @@
 import express from "express";
+import { handleStripeWebhook } from "../controllers/stripeWebhook.controller.js";
 import mongoose from "mongoose";
 import Stripe from "stripe";
 import Order from '../models/order.model.js';
 import { emitNewOrder, emitOrderStatusChange } from '../socket.js';
 
 const router = express.Router();
+
 
 // Initialize Stripe lazily to ensure env vars are loaded
 const getStripe = () => {
@@ -17,6 +19,7 @@ const getStripe = () => {
 // Check if we're in test mode
 const isTestMode = () => process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
 
+router.post("/", handleStripeWebhook);
 router.post("/", async (req, res) => {
   const stripe = getStripe();
   const sig = req.headers["stripe-signature"];
