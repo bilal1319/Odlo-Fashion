@@ -9,7 +9,7 @@ import {
   deleteProduct,
 } from "../../controllers/admin/product.controller.js";
 
-const router = express.Router();
+const router = express.Router()
 
 router.post("/", createProduct);
 router.get("/", getProducts);

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { Bundle } from "../../models/bundle.model.js";
-import { Product } from "../../models/product.model.js";
+import { Bundle } from "../../models/bundle.model.js"
+import { Product } from "../../models/product.model.js"
 
 export const createBundle = async (req, res) => {
   const { _id, title, slug, collectionId, price, includedProducts } = req.body;
