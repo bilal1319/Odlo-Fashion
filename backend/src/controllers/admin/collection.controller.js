@@ -1,4 +1,5 @@
 import { Collection } from "../../models/collection.model.js";
+import { getIO } from "../../socket.js";
 
 export const createCollection = async (req, res) => {
   const { _id, title, slug, description, order } = req.body;
@@ -18,6 +19,8 @@ export const createCollection = async (req, res) => {
     description,
     order,
   });
+
+  getIO().emit("collection:changed");
 
   res.status(201).json(collection);
 };
@@ -42,6 +45,8 @@ export const updateCollection = async (req, res) => {
     { new: true }
   );
 
+  getIO().emit("collection:changed");
+
   if (!updated) return res.status(404).json({ message: "Not found" });
   res.json(updated);
 };
@@ -49,6 +54,7 @@ export const updateCollection = async (req, res) => {
 export const deleteCollectionById = async (req, res) => {
   const deleted = await Collection.findByIdAndDelete(req.params.id);
   if (!deleted) return res.status(404).json({ message: "Not found" });
+  getIO().emit("collection:deleted");
   res.json({ message: "Deleted successfully" });
 }
 
@@ -58,6 +64,8 @@ export const toggleCollectionStatus = async (req, res) => {
 
   collection.isActive = !collection.isActive;
   await collection.save();
+
+  getIO().emit("collection:changed");
 
   res.json({ isActive: collection.isActive });
 };

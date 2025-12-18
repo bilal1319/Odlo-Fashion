@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Bundle } from "../../models/bundle.model.js"
 import { Product } from "../../models/product.model.js"
+import { getIO } from "../../socket.js";
 
 export const createBundle = async (req, res) => {
   const { _id, title, slug, collectionId, price, includedProducts } = req.body;
@@ -23,6 +24,7 @@ export const createBundle = async (req, res) => {
   }
 
   const bundle = await Bundle.create(req.body);
+  getIO().emit("bundle:created");
   res.status(201).json(bundle);
 };
 
@@ -86,6 +88,8 @@ export const updateBundle = async (req, res) => {
     { new: true }
   );
 
+  getIO().emit("bundle:changed");
+
   if (!updated) return res.status(404).json({ message: "Not found" });
   res.json(updated);
 };
@@ -96,6 +100,8 @@ export const toggleBundleStatus = async (req, res) => {
 
   bundle.isActive = !bundle.isActive;
   await bundle.save();
+
+  getIO().emit("bundle:changed");
 
   res.json({ isActive: bundle.isActive });
 };

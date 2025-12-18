@@ -1,6 +1,7 @@
 import { Product } from "../../models/product.model.js";
 import { Category } from "../../models/category.model.js";
 import { Collection } from "../../models/collection.model.js";
+import { getIO } from "../../socket.js";
 
 /**
  * CREATE
@@ -56,6 +57,8 @@ export const createProduct = async (req, res) => {
       formats,
       useCases,
     });
+
+    getIO().emit("product:created");
 
     return res.status(201).json(product);
   } catch (err) {
@@ -131,6 +134,10 @@ export const updateProduct = async (req, res) => {
     return res.status(404).json({ message: "Product not found" });
   }
 
+  getIO().emit("product:changed");
+  // console.log("[SOCKET] product:changed emitted");
+
+
   res.json(updated);
 };
 
@@ -139,6 +146,8 @@ export const deleteProduct = async (req, res) => {
   if (!deleted) {
     return res.status(404).json({ message: "Product not found" });
   }
+
+  getIO().emit("product:deleted");
   res.json({ message: "Product deleted" });
 }
 
@@ -147,6 +156,8 @@ export const toggleProductStatus = async (req, res) => {
   if (!product) {
     return res.status(404).json({ message: "Not found" });
   }
+
+  getIO().emit("product:changed");
 
   product.isActive = !product.isActive;
   await product.save();

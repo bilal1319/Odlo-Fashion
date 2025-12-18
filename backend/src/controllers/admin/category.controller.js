@@ -1,5 +1,6 @@
 import { Category } from "../../models/category.model.js";
 import { Collection } from "../../models/collection.model.js";
+import { getIO } from "../../socket.js";
 
 export const createCategory = async (req, res) => {
   const { _id, title, slug, collectionId, description, order } = req.body;
@@ -24,6 +25,8 @@ export const createCategory = async (req, res) => {
     description,
     order,
   });
+
+  getIO().emit("category:created");
 
   res.status(201).json(category);
 };
@@ -50,6 +53,8 @@ export const updateCategory = async (req, res) => {
     { new: true }
   );
 
+  getIO().emit("category:changed");
+
   if (!updated) return res.status(404).json({ message: "Not found" });
   res.json(updated);
 };
@@ -60,6 +65,8 @@ export const toggleCategoryStatus = async (req, res) => {
 
   category.isActive = !category.isActive;
   await category.save();
+
+  getIO().emit("category:changed");
 
   res.json({ isActive: category.isActive });
 };

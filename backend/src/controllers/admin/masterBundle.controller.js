@@ -1,5 +1,6 @@
 import { MasterBundle } from "../../models/masterBundle.model.js";
 import { Bundle } from "../../models/bundle.model.js";
+import { getIO } from "../../socket.js";
 
 export const createMasterBundle = async (req, res) => {
   const { _id, title, slug, price, includedBundles } = req.body;
@@ -22,6 +23,7 @@ export const createMasterBundle = async (req, res) => {
   }
 
   const masterBundle = await MasterBundle.create(req.body);
+  getIO().emit("masterBundle:created");
   res.status(201).json(masterBundle);
 };
 
@@ -103,6 +105,8 @@ export const updateMasterBundle = async (req, res) => {
     { new: true }
   );
 
+  getIO().emit("masterBundle:changed");
+
   if (!updated) return res.status(404).json({ message: "Not found" });
   res.json(updated);
 };
@@ -113,6 +117,8 @@ export const toggleMasterBundleStatus = async (req, res) => {
 
   mb.isActive = !mb.isActive;
   await mb.save();
+
+  getIO().emit("masterBundle:changed");
 
   res.json({ isActive: mb.isActive });
 };
