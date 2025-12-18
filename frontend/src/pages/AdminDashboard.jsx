@@ -28,6 +28,8 @@ const AdminDashboard = () => {
       const response = await axiosInstance.get('/orders/all');
       if (response.data.success) {
         setOrders(response.data.orders);
+        console.log("orders", response.data.orders);
+        
       }
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 403) {
