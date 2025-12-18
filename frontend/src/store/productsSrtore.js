@@ -1,6 +1,75 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import DOMPurify from 'dompurify'; // npm install dompurify
 import axios from '../utils/axiosInstance';
+
+// Minimal security utility - ONLY prevents script injection
+const XSSProtection = {
+  /**
+   * Minimal sanitization - only removes scripts and dangerous attributes
+   * Preserves all other content exactly as-is
+   */
+  sanitizeText: (text) => {
+    if (typeof text !== 'string') return text;
+    
+    // Use DOMPurify with minimal configuration
+    // ALLOW everything except scripts and dangerous attributes
+    return DOMPurify.sanitize(text, {
+      ALLOWED_TAGS: [], // We're not allowing any HTML tags in text fields
+      ALLOWED_ATTR: [], // We're not allowing any attributes in text fields
+      KEEP_CONTENT: true, // Keep text content
+      // Specifically disallow these dangerous patterns
+      FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'link'],
+      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onmouseout', 'onkeydown', 'onkeypress']
+    });
+  },
+
+  /**
+   * Sanitize a product object - minimal interference
+   */
+  sanitizeProduct: (product) => {
+    if (!product || typeof product !== 'object') return product;
+    
+    // Create a shallow copy to avoid mutation
+    const sanitized = { ...product };
+    
+    // Only sanitize text fields that could contain HTML
+    const textFields = ['title', 'description', 'shortDescription', 'name', 'sku'];
+    
+    textFields.forEach(field => {
+      if (sanitized[field] && typeof sanitized[field] === 'string') {
+        sanitized[field] = XSSProtection.sanitizeText(sanitized[field]);
+      }
+    });
+    
+    return sanitized;
+  },
+
+  /**
+   * Sanitize array of products
+   */
+  sanitizeProducts: (products) => {
+    if (!Array.isArray(products)) return products;
+    
+    // Only sanitize if we have items
+    if (products.length === 0) return products;
+    
+    return products.map(product => XSSProtection.sanitizeProduct(product));
+  },
+
+  /**
+   * Sanitize categories
+   */
+  sanitizeCategories: (categories) => {
+    if (!Array.isArray(categories)) return categories;
+    
+    return categories.map(category => ({
+      ...category,
+      name: category.name ? XSSProtection.sanitizeText(category.name) : category.name,
+      description: category.description ? XSSProtection.sanitizeText(category.description) : category.description
+    }));
+  }
+};
 
 const useProductsStore = create(
   persist(
@@ -48,7 +117,7 @@ const useProductsStore = create(
 
       // ========== PRODUCTS API FUNCTIONS ==========
 
-      // Get all products
+      // Get all products - with minimal XSS protection
       getAllProducts: async (params = {}) => {
         try {
           set({ isProductsLoading: true, productsError: null });
@@ -59,29 +128,29 @@ const useProductsStore = create(
           
           console.log("Products response:", response.data);
           
-          // FIXED: Extract products from the correct path
+          // Extract products from the correct path
           let productsData = [];
           
           if (response.data && response.data.success) {
-            // Structure: {success: true, count: 60, data: Array(60)}
             productsData = response.data.data || [];
           } else if (Array.isArray(response.data)) {
-            // Structure: [...]
             productsData = response.data;
           } else if (response.data && Array.isArray(response.data.products)) {
-            // Structure: { products: [...] }
             productsData = response.data.products;
           }
           
           console.log("Extracted products data:", productsData.length, "items");
           
+          // MINIMAL XSS PROTECTION: Sanitize products to remove scripts
+          const safeProducts = XSSProtection.sanitizeProducts(productsData);
+          
           set({ 
-            products: productsData,
+            products: safeProducts,
             isProductsLoading: false,
             lastFetched: { ...get().lastFetched, products: Date.now() }
           });
           
-          return productsData;
+          return safeProducts;
         } catch (error) {
           console.error("Get products error details:", {
             status: error.response?.status,
@@ -101,7 +170,7 @@ const useProductsStore = create(
         }
       },
 
-      // Get single product by slug
+      // Get single product by slug - with minimal XSS protection
       getProductBySlug: async (slug) => {
         try {
           set({ isLoading: true, error: null });
@@ -112,7 +181,7 @@ const useProductsStore = create(
           
           console.log("Product response:", response.data);
           
-          // FIXED: Extract product from the correct path
+          // Extract product from the correct path
           let productData = null;
           
           if (response.data && response.data.success) {
@@ -121,12 +190,15 @@ const useProductsStore = create(
             productData = response.data.product || response.data;
           }
           
+          // MINIMAL XSS PROTECTION: Sanitize product to remove scripts
+          const safeProduct = XSSProtection.sanitizeProduct(productData);
+          
           set({ 
-            product: productData,
+            product: safeProduct,
             isLoading: false
           });
           
-          return productData;
+          return safeProduct;
         } catch (error) {
           console.error("Get product error details:", {
             status: error.response?.status,
@@ -157,7 +229,7 @@ const useProductsStore = create(
         );
       },
 
-      // Get all categories
+      // Get all categories - with minimal XSS protection
       getCategories: async (params = {}) => {
         try {
           set({ isCategoriesLoading: true, categoriesError: null });
@@ -172,25 +244,25 @@ const useProductsStore = create(
           let categoriesData = [];
           
           if (response.data && response.data.success) {
-            // Structure: {success: true, count: 6, data: Array(6)}
             categoriesData = response.data.data || [];
           } else if (Array.isArray(response.data)) {
-            // Structure: [...]
             categoriesData = response.data;
           } else if (response.data && Array.isArray(response.data.categories)) {
-            // Structure: { categories: [...] }
             categoriesData = response.data.categories;
           }
           
           console.log("Extracted categories data:", categoriesData.length, "items");
           
+          // MINIMAL XSS PROTECTION: Sanitize categories
+          const safeCategories = XSSProtection.sanitizeCategories(categoriesData);
+          
           set({ 
-            categories: categoriesData,
+            categories: safeCategories,
             isCategoriesLoading: false,
             lastFetched: { ...get().lastFetched, categories: Date.now() }
           });
           
-          return categoriesData;
+          return safeCategories;
         } catch (error) {
           console.error("Get categories error details:", {
             status: error.response?.status,
@@ -212,7 +284,7 @@ const useProductsStore = create(
 
       // ========== COLLECTIONS API FUNCTIONS ==========
 
-      // Get all collections
+      // Get all collections - with minimal XSS protection
       getCollections: async (params = {}) => {
         try {
           set({ isCollectionsLoading: true, collectionsError: null });
@@ -234,13 +306,20 @@ const useProductsStore = create(
             collectionsData = response.data.collections;
           }
           
+          // MINIMAL XSS PROTECTION: Sanitize collections (similar to categories)
+          const safeCollections = collectionsData.map(collection => ({
+            ...collection,
+            name: collection.name ? XSSProtection.sanitizeText(collection.name) : collection.name,
+            description: collection.description ? XSSProtection.sanitizeText(collection.description) : collection.description
+          }));
+          
           set({ 
-            collections: collectionsData,
+            collections: safeCollections,
             isCollectionsLoading: false,
             lastFetched: { ...get().lastFetched, collections: Date.now() }
           });
           
-          return collectionsData;
+          return safeCollections;
         } catch (error) {
           console.error("Get collections error details:", {
             status: error.response?.status,
@@ -262,7 +341,7 @@ const useProductsStore = create(
 
       // ========== BUNDLES API FUNCTIONS ==========
 
-      // Get all bundles
+      // Get all bundles - with minimal XSS protection
       getBundles: async (params = {}) => {
         try {
           set({ isBundlesLoading: true, bundlesError: null });
@@ -284,13 +363,16 @@ const useProductsStore = create(
             bundlesData = response.data.bundles;
           }
           
+          // MINIMAL XSS PROTECTION: Sanitize bundles (similar to products)
+          const safeBundles = XSSProtection.sanitizeProducts(bundlesData);
+          
           set({ 
-            bundles: bundlesData,
+            bundles: safeBundles,
             isBundlesLoading: false,
             lastFetched: { ...get().lastFetched, bundles: Date.now() }
           });
           
-          return bundlesData;
+          return safeBundles;
         } catch (error) {
           console.error("Get bundles error details:", {
             status: error.response?.status,
@@ -310,7 +392,7 @@ const useProductsStore = create(
         }
       },
 
-      // Get single bundle by slug
+      // Get single bundle by slug - with minimal XSS protection
       getBundleBySlug: async (slug) => {
         try {
           set({ isLoading: true, error: null });
@@ -330,12 +412,15 @@ const useProductsStore = create(
             bundleData = response.data.bundle || response.data;
           }
           
+          // MINIMAL XSS PROTECTION: Sanitize bundle
+          const safeBundle = XSSProtection.sanitizeProduct(bundleData);
+          
           set({ 
-            bundle: bundleData,
+            bundle: safeBundle,
             isLoading: false
           });
           
-          return bundleData;
+          return safeBundle;
         } catch (error) {
           console.error("Get bundle error details:", {
             status: error.response?.status,
@@ -357,7 +442,7 @@ const useProductsStore = create(
 
       // ========== MASTER BUNDLES API FUNCTIONS ==========
 
-      // Get all master bundles
+      // Get all master bundles - with minimal XSS protection
       getMasterBundles: async (params = {}) => {
         try {
           set({ isMasterBundlesLoading: true, error: null });
@@ -381,13 +466,16 @@ const useProductsStore = create(
             masterBundlesData = response.data.masterBundles;
           }
           
+          // MINIMAL XSS PROTECTION: Sanitize master bundles
+          const safeMasterBundles = XSSProtection.sanitizeProducts(masterBundlesData);
+          
           set({ 
-            masterBundles: masterBundlesData,
+            masterBundles: safeMasterBundles,
             isMasterBundlesLoading: false,
             lastFetched: { ...get().lastFetched, masterBundles: Date.now() }
           });
           
-          return masterBundlesData;
+          return safeMasterBundles;
         } catch (error) {
           console.error("Get master bundles error details:", {
             status: error.response?.status,
