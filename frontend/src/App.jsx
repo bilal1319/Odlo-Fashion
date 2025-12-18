@@ -84,7 +84,7 @@ function Layout() {
     checkAuth();
   }, [checkAuth]);
 
-  const noNavbarRoutes = ['/signin', '/signup', '/admin/login', '/admin/signup', '/admin/dashboard', '/checkout/success', '/checkout/cancel'];
+  const noNavbarRoutes = ['/signin', '/signup', '/admin/login', '/admin/signup', '/admin/dashboard', '/admin/service', '/checkout/success', '/checkout/cancel'];
   const showNavbar = !noNavbarRoutes.includes(location.pathname);
 
   return (
