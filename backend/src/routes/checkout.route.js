@@ -155,4 +155,73 @@ router.post("/prepare", async (req, res) => {
   }
 });
 
+// Verify payment endpoint - use this in dev when webhooks can't reach localhost
+router.get("/verify/:sessionId", async (req, res) => {
+  try {
+    const stripe = getStripe();
+    const { sessionId } = req.params;
+
+    // Retrieve the session from Stripe to verify payment
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    console.log(`🔍 Verifying session ${sessionId}, payment_status: ${session.payment_status}`);
+
+    if (session.payment_status === "paid") {
+      // Check if order is already paid to avoid duplicate updates
+      const existingOrder = await Order.findOne({ "stripe.sessionId": sessionId });
+      
+      if (existingOrder && existingOrder.status === "paid") {
+        console.log(`✅ Order already marked as paid: ${existingOrder._id}`);
+        return res.json({ 
+          success: true, 
+          message: "Payment already verified", 
+          order: existingOrder 
+        });
+      }
+
+      // Update the order to paid
+      const order = await Order.findOneAndUpdate(
+        { "stripe.sessionId": sessionId },
+        { 
+          status: "paid",
+          "stripe.paymentIntentId": session.payment_intent,
+          "stripe.customerId": session.customer
+        },
+        { new: true }
+      );
+
+      if (order) {
+        // Emit WebSocket event for order status change
+        const { emitOrderStatusChange } = await import('../socket.js');
+        emitOrderStatusChange(order.toObject());
+        
+        console.log(`✅ Payment verified and order updated: ${order._id}`);
+        return res.json({ 
+          success: true, 
+          message: "Payment verified", 
+          order 
+        });
+      } else {
+        console.log(`⚠️ No order found for session: ${sessionId}`);
+        return res.status(404).json({ 
+          success: false, 
+          message: "Order not found" 
+        });
+      }
+    }
+
+    res.json({ 
+      success: false, 
+      message: "Payment not completed",
+      paymentStatus: session.payment_status 
+    });
+  } catch (error) {
+    console.error("Verify error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+});
+
 export default router;
