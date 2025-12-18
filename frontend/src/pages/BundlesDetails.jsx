@@ -310,7 +310,7 @@ const BundleDetail = () => {
               <div className="pt-6 flex flex-wrap items-center gap-4 border-t border-gray-200">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
                   {/* Quantity Selector */}
-                  <div className="flex items-center space-x-4">
+                  {/* <div className="flex items-center space-x-4">
                     <label htmlFor="quantity" className="text-gray-700 font-medium">
                       Quantity:
                     </label>
@@ -340,7 +340,7 @@ const BundleDetail = () => {
                         </svg>
                       </button>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
                 
                 {/* Action Buttons */}
@@ -349,7 +349,7 @@ const BundleDetail = () => {
                   <AddToCartButton 
                     item={cartItem}
                     type="bundle"
-                    className="bg-primary text-white px-8 py-3 rounded-md hover:bg-gray-900 transition-colors duration-300 text-lg font-medium flex items-center justify-center group"
+                    className="px-8 py-3 font-bold flex rounded-md transition-all duration-300 bg-white text-primary hover:bg-gray-900 hover:text-white hover:scale-105 active:scale-95 border border-gray-300"
                     quantity={quantity}
                     showIcon={true}
                   />

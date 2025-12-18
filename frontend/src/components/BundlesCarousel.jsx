@@ -20,7 +20,7 @@ const BundleCarousel = ({ services }) => {
   }, []);
 
   const handleClick = (index) => {
-    navigate(`/bundles/${index}`);
+    navigate(`/bundles`);
   };
 
   return (
@@ -36,7 +36,7 @@ const BundleCarousel = ({ services }) => {
         {services.map((service, index) => (
           <div
             key={index}
-            className="flex-shrink-0 cursor-pointer" // Make clickable
+            className="shrink-0 cursor-pointer" // Make clickable
             style={{
               width:
                 itemsToShow === 1
@@ -47,17 +47,17 @@ const BundleCarousel = ({ services }) => {
                   ? "35%"
                   : "28%",
             }}
-            onClick={() => handleClick(index + 1)} // Navigate on click
+            onClick={() => handleClick()} // Navigate on click
           >
             <div className="relative overflow-hidden rounded-lg shadow-lg group">
               <img
                 src={service.img}
                 alt={service.name}
-                className="w-full h-64 sm:h-80 md:h-106 object-cover rounded-lg"
+                className="w-full min-h-64 sm:min-h-80 md:min-h-106 object-cover rounded-lg"
                 loading="lazy"
               />
             </div>
-            <p className="text-center font-bold font-serif text-black mt-2 text-base sm:text-lg md:text-xl px-2">
+            <p className="text-center font-bold  text-black mt-2 text-base sm:text-lg md:text-xl px-2">
               {service.name}
             </p>
           </div>

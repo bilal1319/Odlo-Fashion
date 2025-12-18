@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import AddToCartButton from '../components/AddToCartButton';
@@ -7,8 +7,6 @@ import useProductsStore from '../store/productsSrtore';
 const Services = () => {
   const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("luxury-logo-collections");
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   // Get products from store
   const { 
@@ -47,46 +45,35 @@ const Services = () => {
     return titles[cat] || "Premium Services";
   };
 
-  // Fetch products on component mount
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        await getAllProducts();
-        setIsInitialLoad(false);
-      } catch (error) {
-        console.error("Failed to load products:", error);
-        setIsInitialLoad(false);
-      }
-    };
-    loadProducts();
-  }, [getAllProducts]);
-
-  // Filter products based on selected category
+  // Get category from URL on mount and when location changes
   useEffect(() => {
     const categoryHash = getCategoryFromHash(location.hash);
     setSelectedCategory(categoryHash);
-    
-    if (Array.isArray(products) && products.length > 0) {
-      // Convert URL hash to backend categoryId
-      const backendCategoryId = categoryMapping[categoryHash];
-      
-      // Filter products by categoryId from backend
-      if (backendCategoryId) {
-        const filtered = products.filter(product => {
-          return product.categoryId === backendCategoryId;
-        });
-        setFilteredProducts(filtered);
-      } else {
-        // Default to all products if no category found
-        setFilteredProducts(products);
+    window.scrollTo(0, 0);
+  }, [location.hash]);
+
+  // Only fetch if absolutely necessary
+  useEffect(() => {
+    const loadProductsIfNeeded = async () => {
+      // Only fetch if we have NO products at all
+      if (!products || products.length === 0) {
+        await getAllProducts();
       }
-    } else {
-      setFilteredProducts([]);
+    };
+    loadProductsIfNeeded();
+  }, []); // Empty dependency array - run once on mount
+
+  // Optimized filtering with useMemo - no unnecessary re-renders
+  const filteredProducts = useMemo(() => {
+    if (!Array.isArray(products) || products.length === 0) {
+      return [];
     }
     
-    // Scroll to top when category changes
-    window.scrollTo(0, 0);
-  }, [location.hash, products]);
+    const backendCategoryId = categoryMapping[selectedCategory];
+    if (!backendCategoryId) return products;
+    
+    return products.filter(product => product.categoryId === backendCategoryId);
+  }, [products, selectedCategory]);
 
   // Get placeholder image based on category
   const getPlaceholderImage = (categoryId) => {
@@ -101,12 +88,13 @@ const Services = () => {
     return placeholders[categoryId] || "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&h=300&fit=crop&q=80";
   };
 
-  if (isProductsLoading || isInitialLoad) {
+  // Show loading only when we have no products AND are loading
+  if (isProductsLoading && (!products || products.length === 0)) {
     return (
       <div className="min-h-screen bg-gray-50 p-8 pt-24 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading products...</p>
+          <p className="text-lg text-gray-600">Loading services...</p>
         </div>
       </div>
     );
@@ -124,7 +112,7 @@ const Services = () => {
             High-End Digital Assets for Fashion, Branding & Creative Studios
           </p>
           <p className="text-sm text-gray-500 mt-2">
-            Showing {filteredProducts.length} products in this category
+            Showing {filteredProducts.length} services in this category
           </p>
         </div>
 
@@ -141,6 +129,7 @@ const Services = () => {
                     <img 
                       src={product.image || product.thumbnail || getPlaceholderImage(product.categoryId)} 
                       alt={product.title}
+                      loading="lazy" // Add lazy loading
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
                         e.target.onerror = null;
@@ -162,7 +151,6 @@ const Services = () => {
                   <div className="pt-4 border-t border-gray-100 mt-auto">
                     <div className="flex flex-col items-center space-y-4">
                       <div className="text-center">
-                        {/* Display actual price from backend without formatting */}
                         <p className="text-3xl font-bold text-dark tracking-tight">
                           ${product.price}
                         </p>
@@ -181,7 +169,7 @@ const Services = () => {
                           price: product.price
                         }}
                         type="product"
-                        className="w-full px-6 py-3 text-sm font-medium rounded-md transition-all duration-300 bg-primary text-white hover:bg-gray-900 hover:scale-105 active:scale-95 shadow-md"
+                        className="w-full px-6 py-3 text-sm font-bold rounded-md transition-all duration-300 bg-white text-primary hover:bg-gray-900 hover:text-white hover:scale-105 active:scale-95 border border-gray-300"
                       />
                     </div>
                   </div>

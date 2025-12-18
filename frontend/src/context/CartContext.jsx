@@ -5,7 +5,7 @@ const CartContext = createContext();
 export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }) => {
-  // Initialize cart from localStorage
+  // Initialize cart from localStorage with price conversion
   const [cart, setCart] = useState(() => {
     try {
       const savedCart = localStorage.getItem('odlo-cart');
@@ -23,6 +23,18 @@ export const CartProvider = ({ children }) => {
 
   const [cartCount, setCartCount] = useState(0);
 
+  // Helper function to parse price to number
+  const parsePriceToNumber = (price) => {
+    if (typeof price === 'number') return price;
+    if (typeof price === 'string') {
+      // Remove currency symbols, commas, and other non-numeric characters
+      const cleaned = price.replace(/[^0-9.-]+/g, '');
+      const parsed = parseFloat(cleaned);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+  };
+
   // Update cart count and save to localStorage whenever cart changes
   useEffect(() => {
     try {
@@ -36,6 +48,13 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = (item) => {
     setCart(prevCart => {
+      // Ensure price is stored as a number
+      const itemToAdd = {
+        ...item,
+        price: parsePriceToNumber(item.price),
+        quantity: 1
+      };
+
       const existingItem = prevCart.find(
         cartItem => cartItem.id === item.id && cartItem.type === item.type
       );
@@ -65,13 +84,14 @@ export const CartProvider = ({ children }) => {
 
   const updateQuantity = (id, type, quantity) => {
     if (quantity < 1) {
+      removeFromCart(id, type);
       return;
     }
 
     setCart(prevCart =>
       prevCart.map(item =>
         item.id === id && item.type === type
-          ? { ...item, quantity }
+          ? { ...item, quantity: Math.floor(quantity) }
           : item
       )
     );
@@ -79,6 +99,7 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => {
     setCart([]);
+    localStorage.removeItem('odlo-cart');
   };
 
   // FIXED: This function now handles both string and number prices
@@ -122,6 +143,20 @@ export const CartProvider = ({ children }) => {
           : item.price
       }))
     );
+  };
+
+  // Helper function to get formatted price (for display)
+  const getFormattedPrice = (price) => {
+    if (typeof price === 'number') {
+      return `$${price.toFixed(2)}`;
+    }
+    return '$0.00';
+  };
+
+  // Helper to get item subtotal
+  const getItemSubtotal = (item) => {
+    const price = item.price || 0;
+    return price * item.quantity;
   };
 
   return (

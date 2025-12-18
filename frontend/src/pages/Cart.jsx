@@ -10,48 +10,86 @@ export default function Cart() {
     removeFromCart, 
     updateQuantity, 
     clearCart, 
-    getTotalPrice 
+    getTotalPrice,
+    syncCartFromLocalStorage // Add this function to your CartContext
   } = useCart();
 
   const { getAllProducts } = useProductsStore();
 
-useEffect(() => {
-  // Fix any old cart items with string prices
-  const fixOldCartData = () => {
-    try {
-      const savedCart = localStorage.getItem('odlo-cart');
-      if (savedCart) {
-        const cart = JSON.parse(savedCart);
-        const needsFix = cart.some(item => typeof item.price === 'string');
-        if (needsFix) {
-          console.log('Fixing old cart data...');
-          const fixedCart = cart.map(item => ({
-            ...item,
-            price: typeof item.price === 'string' 
-              ? parseFloat(item.price.replace(/[^0-9.-]+/g, "")) || 0
-              : item.price
-          }));
-          localStorage.setItem('odlo-cart', JSON.stringify(fixedCart));
-          window.location.reload(); // Reload to use fixed data
+  useEffect(() => {
+    // Fix any old cart items with string prices
+    const fixOldCartData = () => {
+      try {
+        const savedCart = localStorage.getItem('odlo-cart');
+        if (savedCart) {
+          const cart = JSON.parse(savedCart);
+          const needsFix = cart.some(item => typeof item.price === 'string');
+          if (needsFix) {
+            console.log('Fixing old cart data...');
+            const fixedCart = cart.map(item => ({
+              ...item,
+              price: typeof item.price === 'string' 
+                ? parseFloat(item.price.replace(/[^0-9.-]+/g, "")) || 0
+                : item.price
+            }));
+            localStorage.setItem('odlo-cart', JSON.stringify(fixedCart));
+            // Instead of reloading, sync the fixed cart with context
+            if (syncCartFromLocalStorage) {
+              syncCartFromLocalStorage();
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fixing cart data:', error);
+      }
+    };
+    
+    fixOldCartData();
+    
+    // Listen for localStorage changes from other tabs/windows
+    const handleStorageChange = (e) => {
+      if (e.key === 'odlo-cart') {
+        // When cart changes in localStorage, sync with context
+        if (syncCartFromLocalStorage) {
+          syncCartFromLocalStorage();
         }
       }
-    } catch (error) {
-      console.error('Error fixing cart data:', error);
-    }
-  };
-  
-  fixOldCartData();
-}, []);
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom event that we'll trigger when clearing cart
+    const handleCartUpdate = () => {
+      if (syncCartFromLocalStorage) {
+        syncCartFromLocalStorage();
+      }
+    };
+    
+    window.addEventListener('cart-updated', handleCartUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('cart-updated', handleCartUpdate);
+    };
+  }, [syncCartFromLocalStorage]);
 
   // Helper to format price for display
   const formatPrice = (price) => {
     if (price === undefined || price === null) return '$0';
-    if (typeof price === 'number') return `$${price}`;
+    if (typeof price === 'number') return `$${price.toFixed(2)}`;
     if (typeof price === 'string') {
       if (price.includes('$')) return price;
-      return `$${price}`;
+      return `$${parseFloat(price).toFixed(2)}`;
     }
     return '$0';
+  };
+
+  // Enhanced clearCart function
+  const handleClearCart = () => {
+    clearCart(); // This should update both context and localStorage
+    
+    // Trigger custom event to ensure other components in same tab update
+    window.dispatchEvent(new Event('cart-updated'));
   };
 
   if (cartCount === 0) {
@@ -153,7 +191,7 @@ useEffect(() => {
                 ))}
                 
                 <button
-                  onClick={clearCart}
+                  onClick={handleClearCart}
                   className="text-red-600 hover:text-red-800 text-sm mt-4"
                 >
                   Clear Cart
