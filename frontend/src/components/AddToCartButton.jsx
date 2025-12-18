@@ -1,5 +1,5 @@
 // src/components/AddToCartButton.js
-import { useCart } from "../context/Cartcontext";
+import { useCart } from "../context/CartContext";
 export default function AddToCartButton({ item, type = "service" }) {
   const { addToCart } = useCart();
 
