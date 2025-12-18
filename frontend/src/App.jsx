@@ -14,13 +14,9 @@ import BundleDetails from './pages/BundlesDetails';
 import ScrollToTop from './components/ScrollToTop';
 import Signin from './pages/Signin';
 import Signup from './pages/Signup';
-<<<<<<< HEAD
 import AdminBoard from './pages/AdminBoard'
 import ServicesManagement from './pages/ServicesManagement';
 import BundlesManagement from './pages/BundlesManagement';import AdminLogin from './pages/AdminLogin';
-=======
-import AdminLogin from './pages/AdminLogin';
->>>>>>> origin/faizan-backend
 import AdminSignup from './pages/AdminSignup';
 import AdminDashboard from './pages/AdminDashboard';
 import useAuthStore from './store/authStore';
@@ -108,13 +104,10 @@ function Layout() {
           <Route path="/checkout/cancel" element={<CheckoutCancel />} />
           <Route path='/signin' element={<Signin />} />
           <Route path='/signup' element={<Signup />} />
-<<<<<<< HEAD
            <Route path="/admin/service" element={<ServicesManagement />} />
     <Route path="/admin/bundle" element={<BundlesManagement />} />
       <Route path="/admin" element={<AdminBoard />}/>
 
-=======
->>>>>>> origin/faizan-backend
           <Route path='/admin/login' element={<AdminLogin />} />
           <Route path='/admin/signup' element={<AdminSignup />} />
           <Route path='/admin/dashboard' element={<AdminDashboard />} />
