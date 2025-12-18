@@ -23,6 +23,13 @@ app.use(cors({
   credentials: true,
 }));
 
+// Cookie parser - ADD THIS
+app.use(cookieParser());
+
+// Body parsers - ADD THIS TOO
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Test Route
 app.get("/", (req, res) => {
   res.send("API is running...");
@@ -42,6 +49,9 @@ import orderRoutes from "./src/routes/order.routes.js";
 
 app.use("/api/auth", authRoutes);
 import stripeRoutes from './src/routes/Stripe.route.js'
+
+app.use("/api/stripe", stripeRoutes);
+app.use("/api/webhooks/stripe", stripeWebhookRoutes);
 app.use("/api/bundles", bundleRoutes);
 app.use("/api/master-bundles", masterBundleRoutes);
 app.use("/api/products", productsRoutes);
