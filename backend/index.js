@@ -2,18 +2,24 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { createServer } from "http";
 import { connectDB } from "./src/db.js";
 import cookieParser from "cookie-parser";
+import { initSocket } from "./src/socket.js";
 dotenv.config();
 
 const app = express();
+const server = createServer(app);
+
+// Initialize Socket.io
+const io = initSocket(server);
 
 // IMPORTANT: Apply raw body parser BEFORE json() for webhook routes
 app.use("/api/webhooks/stripe", express.raw({ type: "application/json" }));
 
 // Regular middleware for other routes
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
   credentials: true,
 }));
 app.use(express.json());
@@ -49,8 +55,9 @@ app.use("/api/webhooks/stripe", stripeWebhookRoutes);
 const PORT = process.env.PORT || 8000;
 
 connectDB().then(() => {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`WebSocket server ready`);
   });
 });
 

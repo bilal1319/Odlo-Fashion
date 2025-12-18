@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import Stripe from "stripe";
 import Order from '../models/order.model.js';
+import { emitNewOrder, emitOrderStatusChange } from '../socket.js';
 
 const router = express.Router();
 
@@ -110,6 +111,9 @@ router.post("/", async (req, res) => {
         }
         await existing.save();
         
+        // Emit WebSocket event for order status change
+        emitOrderStatusChange(existing.toObject());
+        
         if (isTestMode()) {
           console.log(`✅ [TEST] Updated existing order to paid:`, {
             orderId: existing._id,
@@ -135,6 +139,9 @@ router.post("/", async (req, res) => {
         };
 
         const order = await Order.create(orderDoc);
+        
+        // Emit WebSocket event for new order
+        emitNewOrder(order.toObject());
         
         if (isTestMode()) {
           console.log(`✅ [TEST] Order created successfully:`, {
