@@ -6,8 +6,6 @@ import { emitNewOrder, emitOrderStatusChange } from '../socket.js';
 
 const router = express.Router();
 
-<<<<<<< HEAD
-=======
 // Initialize Stripe lazily to ensure env vars are loaded
 const getStripe = () => {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -15,17 +13,12 @@ const getStripe = () => {
   }
   return new Stripe(process.env.STRIPE_SECRET_KEY);
 };
->>>>>>> origin/zain
 
 // Check if we're in test mode
 const isTestMode = () => process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
 
 router.post("/", async (req, res) => {
-<<<<<<< HEAD
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-=======
   const stripe = getStripe();
->>>>>>> origin/zain
   const sig = req.headers["stripe-signature"];
 
   if (isTestMode()) {
