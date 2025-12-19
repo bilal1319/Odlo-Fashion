@@ -14,6 +14,15 @@ const productSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    images: {
+      type: [
+        {
+          url: { type: String, required: true },
+          publicId: { type: String, required: true },
+        },
+      ],
+      default: [],
+    },
 
     slug: {
       type: String,
