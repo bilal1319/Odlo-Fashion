@@ -1,8 +1,10 @@
+// Update your Services.jsx component
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import AddToCartButton from '../components/AddToCartButton';
 import useProductsStore from '../store/productsSrtore';
+import { getIO } from '../utils/socketClient'; // Import socket client
 
 const Services = () => {
   const location = useLocation();
@@ -52,16 +54,41 @@ const Services = () => {
     window.scrollTo(0, 0);
   }, [location.hash]);
 
-  // Only fetch if absolutely necessary
+  // Fetch products on mount and set up socket listener
   useEffect(() => {
-    const loadProductsIfNeeded = async () => {
-      // Only fetch if we have NO products at all
-      if (!products || products.length === 0) {
-        await getAllProducts();
+    // Initial fetch
+    const loadProducts = async () => {
+      await getAllProducts();
+    };
+    loadProducts();
+    
+    // Set up socket listener for real-time updates
+    const socket = getIO();
+    if (socket) {
+      socket.on('product:changed', () => {
+        console.log('📦 Services page: Received product:changed event - refreshing products');
+        getAllProducts(); // Refresh products without page reload
+      });
+      
+      socket.on('product:deleted', () => {
+        console.log('🗑️ Services page: Received product:deleted event - refreshing products');
+        getAllProducts();
+      });
+      
+      socket.on('product:created', () => {
+        console.log('🎉 Services page: Received product:created event - refreshing products');
+        getAllProducts();
+      });
+    }
+    
+    return () => {
+      if (socket) {
+        socket.off('product:changed');
+        socket.off('product:deleted');
+        socket.off('product:created');
       }
     };
-    loadProductsIfNeeded();
-  }, []); // Empty dependency array - run once on mount
+  }, []); // Run only once on mount
 
   // Optimized filtering with useMemo - no unnecessary re-renders
   const filteredProducts = useMemo(() => {
@@ -113,6 +140,7 @@ const Services = () => {
           </p>
           <p className="text-sm text-gray-500 mt-2">
             Showing {filteredProducts.length} services in this category
+            
           </p>
         </div>
 
@@ -127,9 +155,9 @@ const Services = () => {
                 <Link to={`/service/${product.slug}`}>
                   <div className="h-48 w-full overflow-hidden bg-gray-100 flex-shrink-0">
                     <img 
-                      src={product.image || product.thumbnail || getPlaceholderImage(product.categoryId)} 
+                      src={product.images?.[0]?.url || product.image || product.thumbnail || getPlaceholderImage(product.categoryId)} 
                       alt={product.title}
-                      loading="lazy" // Add lazy loading
+                      loading="lazy"
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
                         e.target.onerror = null;
@@ -152,7 +180,7 @@ const Services = () => {
                     <div className="flex flex-col items-center space-y-4">
                       <div className="text-center">
                         <p className="text-3xl font-bold text-dark tracking-tight">
-                          ${product.price}
+                          ${parseFloat(product.price || 0).toFixed(2)}
                         </p>
                         {product.originalPrice && (
                           <p className="text-sm text-gray-500 line-through">

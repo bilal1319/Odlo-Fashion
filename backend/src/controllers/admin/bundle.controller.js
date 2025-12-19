@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { Bundle } from "../../models/bundle.model.js"
 import { Product } from "../../models/product.model.js"
 import { getIO } from "../../socket.js";
-import cloudinary from "../../config/cloudinary.js";
+import cloudinary from "../../utils/cloudinary.js";
 
 export const createBundle = async (req, res) => {
   try {

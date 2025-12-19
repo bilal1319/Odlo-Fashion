@@ -3,12 +3,12 @@ import { Category } from "../../models/category.model.js";
 import { Collection } from "../../models/collection.model.js";
 import { getIO } from "../../socket.js";
 import cloudinary from "../../utils/cloudinary.js";
+import { uploadToCloudinary } from "../../utils/uploadToCloudinary.js";
 
 /**
  * CREATE
  */
 export const createProduct = async (req, res) => {
-  
   try {
     const {
       _id,
@@ -24,10 +24,14 @@ export const createProduct = async (req, res) => {
       useCases,
     } = req.body;
 
-
-
-
-    if (!_id || !title || !slug || !collectionId || !categoryId || price == null) {
+    if (
+      !_id ||
+      !title ||
+      !slug ||
+      !collectionId ||
+      !categoryId ||
+      price == null
+    ) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -47,16 +51,16 @@ export const createProduct = async (req, res) => {
     const images = [];
 
     if (req.files?.length) {
-      for (const file of req.files) {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: "products",
-        });
+      const uploads = req.files.map((file) => uploadToCloudinary(file.buffer));
 
+      const results = await Promise.all(uploads);
+
+      results.forEach((result) => {
         images.push({
           url: result.secure_url,
           publicId: result.public_id,
         });
-      }
+      });
     }
 
     // 5️⃣ Create product
@@ -75,9 +79,6 @@ export const createProduct = async (req, res) => {
       images,
     });
 
-
-
-
     getIO().emit("product:changed");
 
     res.status(201).json(product);
@@ -85,7 +86,6 @@ export const createProduct = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 export const getProducts = async (req, res) => {
   const { collectionId, categoryId, isActive } = req.query;
@@ -106,40 +106,40 @@ export const getProductById = async (req, res) => {
 };
 
 export const getProductBySlug = async (req, res) => {
-    try {
+  try {
     const db = mongoose.connection.db;
 
     if (!db) {
       return res.status(500).json({
         success: false,
-        message: "Database not connected"
+        message: "Database not connected",
       });
     }
 
     const product = await db.collection("products").findOne({
       slug: req.params.slug,
-      isActive: true
+      isActive: true,
     });
 
     if (!product) {
       return res.status(404).json({
         success: false,
-        message: "Product not found"
+        message: "Product not found",
       });
     }
 
     res.json({
       success: true,
-      data: product
+      data: product,
     });
   } catch (error) {
     console.error("Product fetch error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch product"
+      message: "Failed to fetch product",
     });
   }
-}
+};
 
 export const updateProduct = async (req, res) => {
   try {
@@ -194,7 +194,6 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-
 export const deleteProduct = async (req, res) => {
   const deleted = await Product.findByIdAndDelete(req.params.id);
   if (!deleted) {
@@ -203,7 +202,7 @@ export const deleteProduct = async (req, res) => {
 
   getIO().emit("product:deleted");
   res.json({ message: "Product deleted" });
-}
+};
 
 export const toggleProductStatus = async (req, res) => {
   const product = await Product.findById(req.params.id);
@@ -218,5 +217,3 @@ export const toggleProductStatus = async (req, res) => {
 
   res.json({ isActive: product.isActive });
 };
-
-

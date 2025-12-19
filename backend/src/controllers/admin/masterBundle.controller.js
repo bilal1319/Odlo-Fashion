@@ -1,7 +1,7 @@
 import { MasterBundle } from "../../models/masterBundle.model.js";
 import { Bundle } from "../../models/bundle.model.js";
 import { getIO } from "../../socket.js";
-import cloudinary from "../../config/cloudinary.config.js";
+import cloudinary from "../../utils/cloudinary.js";
 
 export const createMasterBundle = async (req, res) => {
   try {

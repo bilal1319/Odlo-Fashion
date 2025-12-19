@@ -14,15 +14,14 @@ const bundleSchema = new mongoose.Schema(
     },
 
     images: {
-  type: [
-    {
-      url: String,
-      publicId: String,
+      type: [
+        {
+          url: String,
+          publicId: String,
+        },
+      ],
+      default: [],
     },
-  ],
-  default: [],
-},
-
 
     slug: {
       type: String,
