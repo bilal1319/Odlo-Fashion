@@ -1,4 +1,5 @@
 import express from "express";
+import upload from "../../middlewares/upload.middleware.js";
 import {
   createBundle,
   getBundles,
@@ -10,11 +11,25 @@ import {
 
 const router = express.Router();
 
-router.post("/", createBundle);
+// CREATE (with images)
+router.post(
+  "/",
+  upload.array("images", 5),
+  createBundle
+);
+
+// READ
 router.get("/", getBundles);
+router.get("/slug/:slug", getBundleBySlug);
 router.get("/:id", getBundleById);
-router.get("/:slug", getBundleBySlug);
-router.put("/:id", updateBundle);
+
+// UPDATE (with images)
+router.put(
+  "/:id",
+  upload.array("images", 5),
+  updateBundle
+);
+
 router.patch("/:id/status", toggleBundleStatus);
 
 export default router;

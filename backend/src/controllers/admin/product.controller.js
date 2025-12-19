@@ -2,11 +2,13 @@ import { Product } from "../../models/product.model.js";
 import { Category } from "../../models/category.model.js";
 import { Collection } from "../../models/collection.model.js";
 import { getIO } from "../../socket.js";
+import cloudinary from "../../utils/cloudinary.js";
 
 /**
  * CREATE
  */
 export const createProduct = async (req, res) => {
+  
   try {
     const {
       _id,
@@ -22,28 +24,42 @@ export const createProduct = async (req, res) => {
       useCases,
     } = req.body;
 
-    // Validate required
+
+
+
     if (!_id || !title || !slug || !collectionId || !categoryId || price == null) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Enforce immutability
     const exists = await Product.findById(_id);
     if (exists) {
       return res.status(409).json({ message: "Product ID already exists" });
     }
 
-    // Validate relations
-    const category = await Category.findById(categoryId);
-    if (!category) {
+    if (!(await Category.findById(categoryId))) {
       return res.status(400).json({ message: "Invalid categoryId" });
     }
 
-    const collection = await Collection.findById(collectionId);
-    if (!collection) {
+    if (!(await Collection.findById(collectionId))) {
       return res.status(400).json({ message: "Invalid collectionId" });
     }
 
+    const images = [];
+
+    if (req.files?.length) {
+      for (const file of req.files) {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: "products",
+        });
+
+        images.push({
+          url: result.secure_url,
+          publicId: result.public_id,
+        });
+      }
+    }
+
+    // 5️⃣ Create product
     const product = await Product.create({
       _id,
       title,
@@ -56,15 +72,20 @@ export const createProduct = async (req, res) => {
       description,
       formats,
       useCases,
+      images,
     });
 
-    getIO().emit("product:created");
 
-    return res.status(201).json(product);
+
+
+    getIO().emit("product:changed");
+
+    res.status(201).json(product);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
+
 
 export const getProducts = async (req, res) => {
   const { collectionId, categoryId, isActive } = req.query;
@@ -121,25 +142,58 @@ export const getProductBySlug = async (req, res) => {
 }
 
 export const updateProduct = async (req, res) => {
-  const forbidden = ["_id", "createdAt"];
-  forbidden.forEach((f) => delete req.body[f]);
+  try {
+    const forbidden = ["_id", "createdAt"];
+    forbidden.forEach((f) => delete req.body[f]);
 
-  const updated = await Product.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    { new: true }
-  );
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
 
-  if (!updated) {
-    return res.status(404).json({ message: "Product not found" });
+    // 1️⃣ Remove selected images (if requested)
+    // Frontend sends: removeImageIds = ["cloudinary_public_id_1", ...]
+    if (req.body.removeImageIds?.length) {
+      const idsToRemove = Array.isArray(req.body.removeImageIds)
+        ? req.body.removeImageIds
+        : [req.body.removeImageIds];
+
+      for (const publicId of idsToRemove) {
+        await cloudinary.uploader.destroy(publicId);
+      }
+
+      product.images = product.images.filter(
+        (img) => !idsToRemove.includes(img.publicId)
+      );
+    }
+
+    // 2️⃣ Upload new images (if any)
+    if (req.files?.length) {
+      for (const file of req.files) {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: "products",
+        });
+
+        product.images.push({
+          url: result.secure_url,
+          publicId: result.public_id,
+        });
+      }
+    }
+
+    // 3️⃣ Update remaining fields
+    Object.assign(product, req.body);
+
+    await product.save();
+
+    getIO().emit("product:changed");
+
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-
-  getIO().emit("product:changed");
-  // console.log("[SOCKET] product:changed emitted");
-
-
-  res.json(updated);
 };
+
 
 export const deleteProduct = async (req, res) => {
   const deleted = await Product.findByIdAndDelete(req.params.id);

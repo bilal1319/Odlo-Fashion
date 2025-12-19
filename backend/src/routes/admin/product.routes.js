@@ -1,4 +1,5 @@
 import express from "express";
+import upload from "../../middlewares/upload.middleware.js";
 import {
   createProduct,
   getProducts,
@@ -9,13 +10,28 @@ import {
   deleteProduct,
 } from "../../controllers/admin/product.controller.js";
 
-const router = express.Router()
+const router = express.Router();
 
-router.post("/", createProduct);
+// CREATE (with images)
+router.post(
+  "/",
+  upload.array("images", 5),
+  createProduct
+);
+
+// READ
 router.get("/", getProducts);
+router.get("/slug/:slug", getProductBySlug);
 router.get("/:id", getProductById);
-router.get("/:slug", getProductBySlug);
-router.put("/:id", updateProduct);
+
+// UPDATE (with images)
+router.put(
+  "/:id",
+  upload.array("images", 5),
+  updateProduct
+);
+
+// DELETE
 router.delete("/:id", deleteProduct);
 router.patch("/:id/status", toggleProductStatus);
 

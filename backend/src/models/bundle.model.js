@@ -13,6 +13,17 @@ const bundleSchema = new mongoose.Schema(
       required: true,
     },
 
+    images: {
+  type: [
+    {
+      url: String,
+      publicId: String,
+    },
+  ],
+  default: [],
+},
+
+
     slug: {
       type: String,
       required: true,
