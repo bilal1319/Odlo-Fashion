@@ -2,13 +2,18 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { BsCart3 } from "react-icons/bs";
+import { FiLogOut } from "react-icons/fi";
 import useProductsStore from "../store/productsSrtore";
+import useAuthStore from "../store/authStore";
 
 export default function Navbar() {
   const [hoverMenu, setHoverMenu] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { cartCount } = useCart();
+  const { user, logout } = useAuthStore();
   
   // Get categories from store
   const { 
@@ -36,6 +41,25 @@ export default function Navbar() {
     if (!category) return 'CATEGORY';
     return category.name || 
            (category.slug ? category.slug.replace(/_/g, ' ').toUpperCase() : 'CATEGORY');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setShowLogoutConfirm(false);
+      // Navigation will happen automatically due to auth state change
+    } catch (error) {
+      console.error('Logout failed:', error);
+      setShowLogoutConfirm(false);
+    }
+  };
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   // Menu items with dynamic categories
@@ -69,14 +93,6 @@ export default function Navbar() {
       {
         name: "Bundles",
         to: "/bundles",
-        // submenu: [
-        //   { name: "Full Branding Studio Bundle", to: "/bundles" },
-        //   { name: "Poster Mega Pack", to: "/bundles" },
-        //   { name: "3D Accessories Collection", to: "/bundles" },
-        //   { name: "Social Media Master Bundle", to: "/bundles" },
-        //   { name: "The Luxury Mockup Collection", to: "/bundles" },
-        //   { name: "All in One Ultimate Bundle", to: "/bundles" },
-        // ],
       }
     ];
   };
@@ -120,231 +136,301 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-black text-white w-full py-4 px-4 md:px-6 fixed top-0 left-0 z-50">
-      {/* DESKTOP LAYOUT */}
-      <div className="hidden lg:flex items-center justify-between max-w-7xl mx-auto">
-        {/* LOGO LEFT */}
-        <Link to="/" className="text-lg md:text-xl font-semibold">
-          ODLO
-        </Link>
+    <>
+      {/* Logout Confirmation Popup */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={cancelLogout}
+          />
+          
+          {/* Modal */}
+          <div className="relative bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 animate-in zoom-in duration-200">
+            <div className="text-center mb-4">
+              <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-3">
+                <FiLogOut className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirm Logout</h3>
+              <p className="text-gray-600">Are you sure you want to logout?</p>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={cancelLogout}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 font-medium"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-        {/* CENTER MENU LINKS */}
-        <div className="flex justify-center">
-          <ul className="flex gap-6 text-sm">
-            {menuItems.map((item, index) => (
-              item.submenu ? (
-                // Items with submenus (Services, Bundles)
-                <li
-                  key={index}
-                  className="relative cursor-default group"
-                  onMouseEnter={() => setHoverMenu(item.name.toLowerCase())}
-                  onMouseLeave={() => setHoverMenu(null)}
-                >
-                  <div className="relative">
+      <nav className="bg-black text-white w-full py-4 px-4 md:px-6 fixed top-0 left-0 z-50">
+        {/* DESKTOP LAYOUT */}
+        <div className="hidden lg:flex items-center justify-between max-w-7xl mx-auto">
+          {/* LOGO LEFT */}
+          <Link to="/" className="text-lg md:text-xl font-semibold">
+            ODLO
+          </Link>
+
+          {/* CENTER MENU LINKS */}
+          <div className="flex justify-center">
+            <ul className="flex gap-6 text-sm">
+              {menuItems.map((item, index) => (
+                item.submenu ? (
+                  // Items with submenus (Services, Bundles)
+                  <li
+                    key={index}
+                    className="relative cursor-default group"
+                    onMouseEnter={() => setHoverMenu(item.name.toLowerCase())}
+                    onMouseLeave={() => setHoverMenu(null)}
+                  >
+                    <div className="relative">
+                      <Link to={item.to} className="uppercase py-2 block relative">
+                        {item.name}
+                        <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
+                      </Link>
+                    </div>
+                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white text-black shadow-lg rounded-md p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
+                      style={{ 
+                        width: item.name === "Bundles" ? "420px" : "264px",
+                        minHeight: isCategoriesLoading && item.name === "Services" ? "100px" : "auto"
+                      }}
+                    >
+                      {isCategoriesLoading && item.name === "Services" ? (
+                        <div className="flex items-center justify-center h-20">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
+                        </div>
+                      ) : (
+                        <ul className="space-y-2 text-sm">
+                          {item.submenu.map((sub, i) => (
+                            <li key={i} className="hover:text-gray-600 cursor-pointer">
+                              <Link 
+                                to={sub.to} 
+                                className="block hover:text-gray-800 transition-colors"
+                                onClick={() => item.name === "Services" && handleCategoryClick()}
+                              >
+                                {sub.name}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </li>
+                ) : (
+                  // Regular menu items
+                  <li key={index} className="relative cursor-default group">
                     <Link to={item.to} className="uppercase py-2 block relative">
                       {item.name}
                       <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
                     </Link>
-                  </div>
-                  <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white text-black shadow-lg rounded-md p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
-                    style={{ 
-                      width: item.name === "Bundles" ? "420px" : "264px",
-                      minHeight: isCategoriesLoading && item.name === "Services" ? "100px" : "auto"
-                    }}
-                  >
-                    {isCategoriesLoading && item.name === "Services" ? (
-                      <div className="flex items-center justify-center h-20">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
-                      </div>
-                    ) : (
-                      <ul className="space-y-2 text-sm">
-                        {item.submenu.map((sub, i) => (
-                          <li key={i} className="hover:text-gray-600 cursor-pointer">
-                            <Link 
-                              to={sub.to} 
-                              className="block hover:text-gray-800 transition-colors"
-                              onClick={() => item.name === "Services" && handleCategoryClick()}
-                            >
-                              {sub.name}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </li>
-              ) : (
-                // Regular menu items
-                <li key={index} className="relative cursor-default group">
-                  <Link to={item.to} className="uppercase py-2 block relative">
-                    {item.name}
-                    <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
-                  </Link>
-                </li>
-              )
-            ))}
-          </ul>
-        </div>
-
-        {/* CART RIGHT with Count Badge */}
-        <Link 
-          to="/cart" 
-          className="uppercase text-sm cursor-pointer items-center gap-2 flex hover:opacity-80 transition-opacity"
-        >
-          Cart
-          {cartCount > 0 && (
-            <span className="bg-white text-black rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-              {cartCount}
-            </span>
-          )}
-        </Link>
-      </div>
-
-      {/* MOBILE LAYOUT */}
-      <div className="lg:hidden flex items-center justify-between">
-        {/* LOGO LEFT */}
-        <Link to="/" className="text-lg md:text-xl font-semibold">
-          ODLO
-        </Link>
-
-        {/* RIGHT SIDE - CART & HAMBURGER */}
-        <div className="flex items-center gap-4">
-          {/* Mobile Cart */}
-          <Link 
-            to="/cart" 
-            className="text-sm uppercase flex items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-            Cart
-            {cartCount > 0 && (
-              <span className="bg-white text-black rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                {cartCount}
-              </span>
-            )}
-          </Link>
-
-          {/* HAMBURGER (MOBILE) */}
-          <button
-            className="hamburger-btn flex flex-col space-y-1.5 z-50"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            <span
-              className={`block w-6 h-0.5 bg-white transition-all duration-300 ${
-                isMobileMenuOpen ? "rotate-45 translate-y-2" : ""
-              }`}
-            ></span>
-            <span
-              className={`block w-6 h-0.5 bg-white transition-all duration-300 ${
-                isMobileMenuOpen ? "opacity-0" : ""
-              }`}
-            ></span>
-            <span
-              className={`block w-6 h-0.5 bg-white transition-all duration-300 ${
-                isMobileMenuOpen ? "-rotate-45 -translate-y-2" : ""
-              }`}
-            ></span>
-          </button>
-        </div>
-      </div>
-
-      {/* MOBILE MENU */}
-      <div
-        className={`lg:hidden mobile-menu-container fixed inset-0 z-40 ${
-          isMobileMenuOpen ? "visible" : "invisible"
-        }`}
-      >
-        <div
-          className={`absolute inset-0 bg-black transition-opacity ${
-            isMobileMenuOpen ? "opacity-50" : "opacity-0"
-          }`}
-          onClick={closeMobileMenu}
-        ></div>
-
-        <div
-          className={`absolute right-0 top-0 h-full w-80 bg-black shadow-2xl transform transition-transform ${
-            isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
-          }`}
-        >
-          <div className="pt-20 px-6">
-            {/* Mobile Cart */}
-            <div className="mb-8 pb-4 border-b border-gray-800">
-              <Link 
-                to="/cart" 
-                className="text-xl hover:underline uppercase flex items-center gap-3"
-                onClick={closeMobileMenu}
-              >
-                Cart
-                {cartCount > 0 && (
-                  <span className="bg-white text-black rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
-            </div>
-
-            <ul className="space-y-1">
-              {menuItems.map((item, index) => (
-                <li key={index} className="border-b border-gray-800">
-                  {item.submenu ? (
-                    <>
-                      <button
-                        className="flex justify-between items-center w-full py-4 text-left text-lg dropdown-toggle"
-                        onClick={() => toggleSubMenu(item.name)}
-                      >
-                        {item.name}
-                        <span className="transition-transform duration-300">
-                          {activeSubMenu === item.name ? (
-                            <FiChevronUp className="w-4 h-4" />
-                          ) : (
-                            <FiChevronDown className="w-4 h-4" />
-                          )}
-                        </span>
-                      </button>
-
-                      <div
-                        className={`overflow-hidden transition-all duration-300 ${
-                          activeSubMenu === item.name ? "max-h-96" : "max-h-0"
-                        }`}
-                      >
-                        {isCategoriesLoading && item.name === "Services" ? (
-                          <div className="pl-4 pb-4 flex items-center justify-center">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                          </div>
-                        ) : (
-                          <ul className="pl-4 pb-4 space-y-3 text-sm">
-                            {item.submenu.map((sub, i) => (
-                              <li key={i} className="text-gray-300 hover:text-white">
-                                <Link 
-                                  to={sub.to}
-                                  className="mobile-dropdown-link block py-1"
-                                  onClick={() => {
-                                    handleCategoryClick();
-                                    closeMobileMenu();
-                                  }}
-                                >
-                                  {sub.name}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <Link 
-                      to={item.to}
-                      className="py-4 text-lg block hover:text-gray-300 transition-colors"
-                      onClick={closeMobileMenu}
-                    >
-                      {item.name}
-                    </Link>
-                  )}
-                </li>
+                  </li>
+                )
               ))}
             </ul>
           </div>
+
+          {/* RIGHT SIDE - CART & LOGOUT */}
+          <div className="flex items-center gap-6">
+            {/* Cart with Icon and Badge */}
+            <Link 
+              to="/cart" 
+              className="relative p-2 hover:opacity-80 transition-opacity"
+              title="Cart"
+            >
+              <BsCart3 className="text-xl" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Logout Button (only show if user is logged in) */}
+            {user && (
+              <button
+                onClick={handleLogoutClick}
+                className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                title="Logout"
+              >
+                <FiLogOut className="text-lg" />
+                <span className="hidden md:inline">Logout</span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-    </nav>
+
+        {/* MOBILE LAYOUT */}
+        <div className="lg:hidden flex items-center justify-between">
+          {/* LOGO LEFT */}
+          <Link to="/" className="text-lg md:text-xl font-semibold">
+            ODLO
+          </Link>
+
+          {/* RIGHT SIDE - CART & HAMBURGER */}
+          <div className="flex items-center gap-6">
+            {/* Mobile Cart with Icon and Badge */}
+            <Link 
+              to="/cart" 
+              className="relative p-2 hover:opacity-80 transition-opacity"
+              title="Cart"
+            >
+              <BsCart3 className="text-xl" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
+            {/* HAMBURGER (MOBILE) */}
+            <button
+              className="hamburger-btn flex flex-col space-y-1.5 z-50"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              <span
+                className={`block w-6 h-0.5 bg-white transition-all duration-300 ${
+                  isMobileMenuOpen ? "rotate-45 translate-y-2" : ""
+                }`}
+              ></span>
+              <span
+                className={`block w-6 h-0.5 bg-white transition-all duration-300 ${
+                  isMobileMenuOpen ? "opacity-0" : ""
+                }`}
+              ></span>
+              <span
+                className={`block w-6 h-0.5 bg-white transition-all duration-300 ${
+                  isMobileMenuOpen ? "-rotate-45 -translate-y-2" : ""
+                }`}
+              ></span>
+            </button>
+          </div>
+        </div>
+
+        {/* MOBILE MENU */}
+        <div
+          className={`lg:hidden mobile-menu-container fixed inset-0 z-40 ${
+            isMobileMenuOpen ? "visible" : "invisible"
+          }`}
+        >
+          <div
+            className={`absolute inset-0 bg-black transition-opacity ${
+              isMobileMenuOpen ? "opacity-50" : "opacity-0"
+            }`}
+            onClick={closeMobileMenu}
+          ></div>
+
+          <div
+            className={`absolute right-0 top-0 h-full w-80 bg-black shadow-2xl transform transition-transform ${
+              isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+            }`}
+          >
+            <div className="pt-20 px-6">
+              {/* Mobile Cart */}
+              <div className="mb-8 pb-4 border-b border-gray-800">
+                <Link 
+                  to="/cart" 
+                  className="text-xl hover:underline uppercase flex items-center gap-3 relative"
+                  onClick={closeMobileMenu}
+                >
+                  <BsCart3 className="text-lg" />
+                 
+                  {cartCount > 0 && (
+                    <span className="absolute left-7 top-0 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+              </div>
+
+              <ul className="space-y-1">
+                {menuItems.map((item, index) => (
+                  <li key={index} className="border-b border-gray-800">
+                    {item.submenu ? (
+                      <>
+                        <button
+                          className="flex justify-between items-center w-full py-4 text-left text-lg dropdown-toggle"
+                          onClick={() => toggleSubMenu(item.name)}
+                        >
+                          {item.name}
+                          <span className="transition-transform duration-300">
+                            {activeSubMenu === item.name ? (
+                              <FiChevronUp className="w-4 h-4" />
+                            ) : (
+                              <FiChevronDown className="w-4 h-4" />
+                            )}
+                          </span>
+                        </button>
+
+                        <div
+                          className={`overflow-hidden transition-all duration-300 ${
+                            activeSubMenu === item.name ? "max-h-96" : "max-h-0"
+                          }`}
+                        >
+                          {isCategoriesLoading && item.name === "Services" ? (
+                            <div className="pl-4 pb-4 flex items-center justify-center">
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            </div>
+                          ) : (
+                            <ul className="pl-4 pb-4 space-y-3 text-sm">
+                              {item.submenu.map((sub, i) => (
+                                <li key={i} className="text-gray-300 hover:text-white">
+                                  <Link 
+                                    to={sub.to}
+                                    className="mobile-dropdown-link block py-1"
+                                    onClick={() => {
+                                      handleCategoryClick();
+                                      closeMobileMenu();
+                                    }}
+                                  >
+                                    {sub.name}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <Link 
+                        to={item.to}
+                        className="py-4 text-lg block hover:text-gray-300 transition-colors"
+                        onClick={closeMobileMenu}
+                      >
+                        {item.name}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+
+                {/* Mobile Logout Button */}
+                {user && (
+                  <li className="border-b border-gray-800">
+                    <button
+                      onClick={handleLogoutClick}
+                      className="py-4 text-lg flex items-center gap-3 hover:text-gray-300 transition-colors w-full text-left"
+                    >
+                      <FiLogOut className="text-base" />
+                      Logout
+                    </button>
+                  </li>
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </>
   );
 }

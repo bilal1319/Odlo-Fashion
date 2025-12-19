@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LockClosedIcon, ShieldCheckIcon } from '@heroicons/react/24/solid';
-import axiosInstance from '../utils/axiosInstance';
+import useAuthStore from '../store/authStore'; // Import the auth store
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -9,6 +9,7 @@ const AdminLogin = () => {
     email: '',
     password: ''
   });
+  const { adminLogin, isLoading: authLoading, error: authError } = useAuthStore();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -26,19 +27,23 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const response = await axiosInstance.post('/auth/admin/login', formData);
+      // Use the auth store's adminLogin method
+      const response = await adminLogin(formData.email, formData.password);
       
-      if (response.data.success) {
-        // Store token or user info if needed
-        localStorage.setItem('adminToken', response.data.token);
+      if (response.success) {
+        console.log('Admin login successful, navigating to dashboard', response);
         navigate('/admin/dashboard');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      console.error('Admin login error:', err);
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  // Combine local error with auth store error
+  const displayError = error || authError;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center px-4">
@@ -55,9 +60,9 @@ const AdminLogin = () => {
         {/* Login Form */}
         <div className="bg-white rounded-lg shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
+            {displayError && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-                {error}
+                {displayError}
               </div>
             )}
 
@@ -93,14 +98,14 @@ const AdminLogin = () => {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || authLoading}
               className={`w-full py-3 px-4 rounded-md text-white font-medium ${
-                loading
+                loading || authLoading
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700'
               } transition flex items-center justify-center`}
             >
-              {loading ? (
+              {loading || authLoading ? (
                 <>
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
