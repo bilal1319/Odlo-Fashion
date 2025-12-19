@@ -3,8 +3,9 @@ import img1 from "../assets/img1.jpg";
 import img2 from "../assets/img8.jpg";
 import img3 from "../assets/img11.jpg";
 import img4 from "../assets/img13.jpg";
+import image1 from "../assets/image1.jpg"
 
-const images = [img1, img2, img3, img4];
+const images = [image1, img2, img3, img4];
 
 const Carousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
