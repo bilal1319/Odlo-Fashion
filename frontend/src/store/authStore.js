@@ -144,8 +144,12 @@ const useAuthStore = create(
       checkAuth: async () => {
         try {
           set({ isLoading: true });
+
+          console.log("Checking authentication status...");
           
           const response = await axios.get('/auth/check');
+
+          console.log("Auth check response:", response.data);
           
           if (response.data.success && response.data.user) {
             const userData = {
