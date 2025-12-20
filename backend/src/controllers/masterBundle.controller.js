@@ -1,7 +1,33 @@
+// controllers/masterBundle.controller.js
 import mongoose from "mongoose";
 
+// Get all master bundles
+export const getMasterBundles = async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    
+    // Get all active master bundles
+    const masterBundles = await db.collection("master_bundles")
+      .find({ isActive: true })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.json({
+      success: true,
+      data: masterBundles
+    });
+  } catch (error) {
+    console.error("Get master bundles error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch master bundles"
+    });
+  }
+};
+
+// Get master bundle by slug (existing function)
 export const masterBundleBySlug = async (req, res) => {
-    try {
+  try {
     const db = mongoose.connection.db;
 
     const masterBundle = await db.collection("master_bundles").findOne({
@@ -56,4 +82,4 @@ export const masterBundleBySlug = async (req, res) => {
       message: "Failed to fetch master bundle"
     });
   }
-}
+};

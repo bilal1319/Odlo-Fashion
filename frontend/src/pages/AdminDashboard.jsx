@@ -295,6 +295,9 @@ const AdminDashboard = () => {
                     Status
                   </th>
                   <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Services
+                  </th>
+                  <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     Date
                   </th>
                 </tr>
@@ -328,6 +331,26 @@ const AdminDashboard = () => {
                       {order.testMode && (
                         <div className="text-xs text-orange-600 mt-1">TEST</div>
                       )}
+                    </td>
+                    <td className="px-4 md:px-6 py-4">
+                      <div className="max-w-xs">
+                        {order.items && order.items.length > 0 ? (
+                          <div className="space-y-1">
+                            {order.items.slice(0, 3).map((item, index) => (
+                              <div key={index} className="text-xs text-gray-600 truncate">
+                                {item.title || item.name} ×{item.quantity || 1}
+                              </div>
+                            ))}
+                            {order.items.length > 3 && (
+                              <div className="text-xs text-gray-500">
+                                +{order.items.length - 3} more items
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-400 italic">No items</div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(order.createdAt)}

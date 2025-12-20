@@ -1,3 +1,4 @@
+// routes/admin/masterBundle.routes.js
 import express from "express";
 import upload from "../../middlewares/upload.middleware.js";
 import {
@@ -7,6 +8,7 @@ import {
   updateMasterBundle,
   toggleMasterBundleStatus,
   getMasterBundleBySlug,
+  deleteMasterBundle  // Add this import
 } from "../../controllers/admin/masterBundle.controller.js";
 
 const router = express.Router();
@@ -31,5 +33,8 @@ router.put(
 );
 
 router.patch("/:id/status", toggleMasterBundleStatus);
+
+// DELETE
+router.delete("/:id", deleteMasterBundle);  // Add this route
 
 export default router;

@@ -23,7 +23,9 @@ const ServicesDetails = () => {
     const loadProduct = async () => {
       try {
         setIsLoading(true);
-        await getProductBySlug(slug);
+        const fetchedProduct = await getProductBySlug(slug);
+        console.log("Fetched product:", fetchedProduct);
+        setProduct(fetchedProduct);
       } catch (error) {
         console.error("Failed to load product:", error);
       } finally {
@@ -91,14 +93,6 @@ const ServicesDetails = () => {
       </div>
     );
   }
-  
-  // Create an array item with quantity for AddToCartButton
-  const cartItem = {
-    ...product,
-    id: product._id, // Use _id from backend
-    name: product.title,
-    quantity: quantity
-  };
 
   // Get placeholder image based on category
   const getPlaceholderImage = (categoryId) => {
@@ -112,6 +106,17 @@ const ServicesDetails = () => {
     };
     return placeholders[product.categoryId] || "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=800&h=600&fit=crop&q=80";
   };
+  
+  // Create an array item with quantity for AddToCartButton
+  const cartItem = {
+    ...product,
+    id: product._id, // Use _id from backend
+    image: product.images?.[0]?.url || product.image || product.thumbnail || getPlaceholderImage(product.categoryId),
+    name: product.title,
+    quantity: quantity
+  };
+
+  
 
   return (
     <div className="min-h-screen py-8 md:py-12 pt-24">
@@ -157,7 +162,7 @@ const ServicesDetails = () => {
                 
                 {/* Price */}
                 <div className="flex items-center space-x-4 mb-4">
-                  <span className="text-4xl font-bold text-gray-900">
+                  <span className="text-4xl font-bold text-green-800">
                     ${product.price}
                   </span>
                   {product.originalPrice && (

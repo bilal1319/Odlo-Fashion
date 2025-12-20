@@ -44,7 +44,7 @@ const Checkout = () => {
     e.preventDefault();
     
     if (!formData.firstName || !formData.lastName || !formData.email || 
-        !formData.address || !formData.city || !formData.phone) {
+        !formData.address ||  !formData.phone) {
       alert('Please fill in all required fields');
       return;
     }
@@ -191,7 +191,7 @@ const Checkout = () => {
                   </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
+                      {/* <div>
                         <label className="block text-sm font-medium mb-2">Country</label>
                         <select
                           name="country"
@@ -212,11 +212,11 @@ const Checkout = () => {
                           placeholder="State/Province"
                           className="w-full border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                         />
-                      </div>
+                      </div> */}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
+                      {/* <div>
                         <label className="block text-sm font-medium mb-2">City *</label>
                         <select
                           name="city"
@@ -232,7 +232,7 @@ const Checkout = () => {
                             </option>
                           ))}
                         </select>
-                      </div>
+                      </div> */}
                       <div>
                         <label className="block text-sm font-medium mb-2">Zip/Postal Code</label>
                         <input

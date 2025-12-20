@@ -1,4 +1,7 @@
-import { useCart } from "../context/Cartcontext";
+
+import { useCart } from "../context/CartContext";
+import { toast } from 'react-toastify'; 
+
 
 export default function AddToCartButton({ item, type = "product", className = "", quantity = 1, showIcon = false }) {
   const { addToCart } = useCart();
@@ -29,17 +32,20 @@ export default function AddToCartButton({ item, type = "product", className = ""
 
     addToCart(cartItem);
     
-    // Optional: Show feedback
+    // Show success toast instead of alert
     const itemName = item.title || item.name;
-    alert(`${itemName} added to cart!`);
+    toast.success(` Added to cart successfully!`, {
+      position: "top-center",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "colored",
+    });
   };
 
   const buttonClass = className || "bg-black text-white px-6 py-2 text-sm uppercase hover:bg-gray-800 transition-colors";
-
-  // Format price for display
-  const displayPrice = typeof item.price === 'string' 
-    ? item.price.includes('$') ? item.price : `$${item.price}`
-    : `$${item.price || 0}`;
 
   return (
     <button

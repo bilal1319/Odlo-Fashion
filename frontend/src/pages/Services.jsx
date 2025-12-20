@@ -179,7 +179,7 @@ const Services = () => {
                   <div className="pt-4 border-t border-gray-100 mt-auto">
                     <div className="flex flex-col items-center space-y-4">
                       <div className="text-center">
-                        <p className="text-3xl font-bold text-dark tracking-tight">
+                        <p className="text-xl font-bold text-green-800 tracking-tight">
                           ${parseFloat(product.price || 0).toFixed(2)}
                         </p>
                         {product.originalPrice && (
@@ -192,6 +192,7 @@ const Services = () => {
                       <AddToCartButton 
                         item={{
                           ...product,
+                          image: product.images?.[0]?.url || product.image || product.thumbnail || getPlaceholderImage(product.categoryId),
                           id: product._id,
                           name: product.title,
                           price: product.price

@@ -23,7 +23,8 @@ const BundleDetail = () => {
     const loadBundle = async () => {
       try {
         setIsLoading(true);
-        await getBundleBySlug(slug);
+      const fetchedBundle =  await getBundleBySlug(slug);
+        setBundle(fetchedBundle);
       } catch (error) {
         console.error("Failed to load bundle:", error);
       } finally {
@@ -54,8 +55,11 @@ const BundleDetail = () => {
       if (!foundBundle && Array.isArray(masterBundles)) {
         foundBundle = masterBundles.find(b => b.slug === slug);
       }
+
+      console.log("Found bundle check:", foundBundle);
       
       if (foundBundle) {
+        console.log("Found bundle:", foundBundle);
         setBundle(foundBundle);
       }
     };
@@ -118,14 +122,7 @@ const BundleDetail = () => {
     );
   }
 
-  const cartItem = {
-    ...bundle,
-    id: bundle._id || bundle.id,
-    name: bundle.title || bundle.name,
-    quantity: quantity
-  };
-
-  const getPlaceholderImage = (bundleType) => {
+    const getPlaceholderImage = (bundleType) => {
     const placeholders = {
       "full_branding": "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=800&h=600&fit=crop&q=80",
       "poster_pack": "https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?w=800&h=600&fit=crop&q=80",
@@ -136,6 +133,16 @@ const BundleDetail = () => {
     };
     return placeholders[bundle.type] || "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=800&h=600&fit=crop&q=80";
   };
+
+  const cartItem = {
+    ...bundle,
+    id: bundle._id || bundle.id,
+    image: bundle.images?.[0]?.url || bundle.image || bundle.thumbnail || getPlaceholderImage(bundle.type),
+    name: bundle.title || bundle.name,
+    quantity: quantity
+  };
+
+
 
   const includedProducts = getIncludedProducts(bundle);
   const savingsPercentage = bundle.savingsPercentage || "67%";
@@ -203,14 +210,14 @@ const BundleDetail = () => {
             <div className="space-y-6">
               {/* Bundle Header */}
               <div>
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
                   {bundle.title || bundle.name}
                 </h1>
                 
                 {/* Price and Savings */}
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                   <div className="flex items-baseline">
-                    <span className="text-4xl lg:text-5xl font-bold text-gray-900">
+                    <span className="text-4xl font-bold text-green-800">
                       ${bundle.price}
                     </span>
                     {bundle.originalPrice && (

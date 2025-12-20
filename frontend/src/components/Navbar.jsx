@@ -175,100 +175,75 @@ export default function Navbar() {
       )}
 
       <nav className="bg-black text-white w-full py-4 px-4 md:px-6 fixed top-0 left-0 z-50">
-        {/* DESKTOP LAYOUT */}
-        <div className="hidden lg:flex items-center justify-between max-w-7xl mx-auto">
-          {/* LOGO LEFT */}
-          <Link to="/" className="text-lg md:text-xl font-semibold">
-            ODLO
-          </Link>
+        {/* DESKTOP LAYOUT - Using CSS Grid */}
+<div className="hidden lg:grid grid-cols-3 items-center max-w-7xl mx-auto">
+  {/* LEFT LOGO */}
+  <Link to="/" className="text-lg md:text-xl font-semibold justify-self-start">
+    ODLO
+  </Link>
 
-          {/* CENTER MENU LINKS */}
-          <div className="flex justify-center">
-            <ul className="flex gap-6 text-sm">
-              {menuItems.map((item, index) => (
-                item.submenu ? (
-                  // Items with submenus (Services, Bundles)
-                  <li
-                    key={index}
-                    className="relative cursor-default group"
-                    onMouseEnter={() => setHoverMenu(item.name.toLowerCase())}
-                    onMouseLeave={() => setHoverMenu(null)}
-                  >
-                    <div className="relative">
-                      <Link to={item.to} className="uppercase py-2 block relative">
-                        {item.name}
-                        <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
-                      </Link>
-                    </div>
-                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white text-black shadow-lg rounded-md p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
-                      style={{ 
-                        width: item.name === "Bundles" ? "420px" : "264px",
-                        minHeight: isCategoriesLoading && item.name === "Services" ? "100px" : "auto"
-                      }}
-                    >
-                      {isCategoriesLoading && item.name === "Services" ? (
-                        <div className="flex items-center justify-center h-20">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
-                        </div>
-                      ) : (
-                        <ul className="space-y-2 text-sm">
-                          {item.submenu.map((sub, i) => (
-                            <li key={i} className="hover:text-gray-600 cursor-pointer">
-                              <Link 
-                                to={sub.to} 
-                                className="block hover:text-gray-800 transition-colors"
-                                onClick={() => item.name === "Services" && handleCategoryClick()}
-                              >
-                                {sub.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </li>
-                ) : (
-                  // Regular menu items
-                  <li key={index} className="relative cursor-default group">
-                    <Link to={item.to} className="uppercase py-2 block relative">
-                      {item.name}
-                      <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
-                    </Link>
-                  </li>
-                )
-              ))}
-            </ul>
-          </div>
-
-          {/* RIGHT SIDE - CART & LOGOUT */}
-          <div className="flex items-center gap-6">
-            {/* Cart with Icon and Badge */}
-            <Link 
-              to="/cart" 
-              className="relative p-2 hover:opacity-80 transition-opacity"
-              title="Cart"
-            >
-              <BsCart3 className="text-xl" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
-                  {cartCount}
-                </span>
-              )}
+  {/* CENTER MENU */}
+  <div className="flex justify-center">
+    <ul className="flex gap-8 text-sm">
+      {menuItems.map((item, index) => (
+        item.submenu ? (
+          // Items with submenus (Services, Bundles)
+          <li
+            key={index}
+            className="relative cursor-default group"
+            onMouseEnter={() => setHoverMenu(item.name.toLowerCase())}
+            onMouseLeave={() => setHoverMenu(null)}
+          >
+            <div className="relative">
+              <Link to={item.to} className="uppercase py-2 block relative">
+                {item.name}
+                <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
+              </Link>
+            </div>
+            {/* Submenu dropdown */}
+          </li>
+        ) : (
+          // Regular menu items
+          <li key={index} className="relative cursor-default group">
+            <Link to={item.to} className="uppercase py-2 block relative">
+              {item.name}
+              <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
             </Link>
+          </li>
+        )
+      ))}
+    </ul>
+  </div>
 
-            {/* Logout Button (only show if user is logged in) */}
-            {user && (
-              <button
-                onClick={handleLogoutClick}
-                className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity"
-                title="Logout"
-              >
-                <FiLogOut className="text-lg" />
-                <span className="hidden md:inline">Logout</span>
-              </button>
-            )}
-          </div>
-        </div>
+  {/* RIGHT SIDE */}
+  <div className="flex items-center gap-6 justify-self-end">
+    {/* Cart with Icon and Badge */}
+    <Link 
+      to="/cart" 
+      className="relative p-2 hover:opacity-80 transition-opacity"
+      title="Cart"
+    >
+      <BsCart3 className="text-xl" />
+      {cartCount > 0 && (
+        <span className="absolute -top-1 -right-1 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+          {cartCount}
+        </span>
+      )}
+    </Link>
+
+    {/* Logout Button */}
+    {user && (
+      <button
+        onClick={handleLogoutClick}
+        className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity"
+        title="Logout"
+      >
+        <FiLogOut className="text-lg" />
+        <span className="hidden md:inline">Logout</span>
+      </button>
+    )}
+  </div>
+</div>
 
         {/* MOBILE LAYOUT */}
         <div className="lg:hidden flex items-center justify-between">

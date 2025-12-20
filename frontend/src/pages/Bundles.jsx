@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AddToCartButton from '../components/AddToCartButton';
 import useProductsStore from '../store/productsSrtore';
+import { getIO } from '../utils/socketClient';
 
 const Bundles = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -15,7 +16,7 @@ const Bundles = () => {
     masterBundles
   } = useProductsStore();
 
-  // Fetch bundles on component mount
+  // Fetch bundles on component mount and set up socket listeners
   useEffect(() => {
     const loadBundles = async () => {
       try {
@@ -28,6 +29,44 @@ const Bundles = () => {
       }
     };
     loadBundles();
+
+    // Set up socket listeners for real-time updates
+    const socket = getIO();
+    if (socket) {
+      // Listen for bundle changes (create, update, status toggle)
+      socket.on('bundle:changed', () => {
+        console.log('📦 Received bundle:changed event - refreshing bundles');
+        getBundles();
+      });
+      
+      // Listen for master bundle changes
+      socket.on('masterBundle:changed', () => {
+        console.log('👑 Received masterBundle:changed event - refreshing master bundles');
+        getMasterBundles();
+      });
+      
+      // Listen for bundle deletions
+      socket.on('bundle:deleted', (data) => {
+        console.log('🗑️ Received bundle:deleted event', data);
+        getBundles();
+      });
+      
+      // Listen for master bundle deletions
+      socket.on('masterBundle:deleted', (data) => {
+        console.log('🗑️ Received masterBundle:deleted event', data);
+        getMasterBundles();
+      });
+    }
+    
+    // Clean up socket listeners when component unmounts
+    return () => {
+      if (socket) {
+        socket.off('bundle:changed');
+        socket.off('masterBundle:changed');
+        socket.off('bundle:deleted');
+        socket.off('masterBundle:deleted');
+      }
+    };
   }, [getBundles, getMasterBundles]);
 
   // Safely combine regular bundles and master bundles
@@ -63,11 +102,11 @@ const Bundles = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 pt-24">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8 md:mb-12 text-center">
+        <div className="mb-8 md:mb-12 text-left">
           <h1 className="text-3xl md:text-4xl font-bold mb-2 text-primary">
             BUNDLES
           </h1>
-          <p className="text-lg text-light-dark max-w-3xl mx-auto">
+          <p className="text-lg text-light-dark max-w-3xl ">
             Complete brand-building systems engineered for creators who want to elevate every touchpoint with editorial sophistication and timeless luxury.
           </p>
           <p className="text-sm text-gray-500 mt-2">
@@ -108,7 +147,7 @@ const Bundles = () => {
                   <div className="pt-4 border-t border-gray-100 mt-auto">
                     <div className="flex flex-col items-center space-y-4">
                       <div className="text-center">
-                        <p className="text-xl font-bold text-dark tracking-tight group-hover:text-primary transition-colors">
+                        <p className="text-xl font-bold text-green-800 tracking-tight ">
                           ${bundle.price}
                         </p>
                         {bundle.originalPrice && (
@@ -122,6 +161,7 @@ const Bundles = () => {
                       <AddToCartButton 
                         item={{
                           ...bundle,
+                          image: bundle.images?.[0]?.url || bundle.image || bundle.thumbnail || getPlaceholderImage(bundle.type),
                           id: bundle._id || bundle.id,
                           name: bundle.title || bundle.name,
                           price: bundle.price

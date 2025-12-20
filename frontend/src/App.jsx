@@ -1,6 +1,8 @@
 // App.jsx
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
+import { ToastContainer } from 'react-toastify'; 
+import 'react-toastify/dist/ReactToastify.css'; 
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Services from './pages/Services';
@@ -23,7 +25,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import useAuthStore from './store/authStore';
 import Success from './pages/Sucess';
 import useProductsStore from './store/productsSrtore';
-import AdminLayout from './components/AdminLayout'; // Import AdminLayout
+import AdminLayout from './components/AdminLayout';
 
 function App() {
   return (
@@ -31,6 +33,22 @@ function App() {
       <Router>
         <ScrollToTop />
         <AppInitializer />
+        {/* Add ToastContainer component here */}
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+          style={{
+            zIndex: 9999,
+          }}
+        />
         <Layout />
       </Router>
     </CartProvider>
@@ -110,7 +128,6 @@ function Layout() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="service" element={<ServicesManagement />} />
             <Route path="bundle" element={<BundlesManagement />} />
-            {/* Add more admin routes here */}
           </Route>
         </Routes>
       </div>

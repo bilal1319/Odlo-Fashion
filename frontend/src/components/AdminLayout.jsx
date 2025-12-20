@@ -32,7 +32,7 @@ const AdminLayout = () => {
                   )}
                 </button>
                 {/* Logo for mobile */}
-                <div className="ml-3 lg:hidden">
+                <div className="ml-3 ">
                   <div className="flex items-center space-x-2">
                     
                     <span className="font-bold text-gray-900">Admin</span>
@@ -50,7 +50,7 @@ const AdminLayout = () => {
                 </button>
                 
                 {/* User Profile */}
-                <div className="flex items-center space-x-3">
+                {/* <div className="flex items-center space-x-3">
                   <div className="hidden md:flex flex-col text-right">
                     <span className="text-sm font-medium text-gray-900">Admin User</span>
                     <span className="text-xs text-gray-500">Super Admin</span>
@@ -58,7 +58,7 @@ const AdminLayout = () => {
                   <div className="h-8 w-8 bg-linear-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
                     <span className="text-sm font-medium text-white">A</span>
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
