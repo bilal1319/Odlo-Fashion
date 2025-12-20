@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 
 // Use Vite environment variables
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 
-                   import.meta.env.VITE_API_URL?.replace('/api', '') || "https://odlo-fashion.onrender.com" ||
+                   import.meta.env.VITE_API_URL?.replace('/api', '') || 
                    'http://localhost:8000';
 
 let socket = null;
