@@ -3,6 +3,7 @@ import  User  from "../models/user.model.js";
 
 //Token Verification Middleware
 export const protect = async (req, res, next) => {
+    console.log("Auth Middleware: Verifying token", req.cookies.token);
     const token = req.cookies.token;
 
     if (!token)

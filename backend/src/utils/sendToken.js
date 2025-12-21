@@ -25,6 +25,5 @@ res
       email: user.email,       
       role: user.role 
     },
-    token
   });
 };
