@@ -6,6 +6,7 @@ import { BsCart3 } from "react-icons/bs";
 import { FiLogOut } from "react-icons/fi";
 import useProductsStore from "../store/productsSrtore";
 import useAuthStore from "../store/authStore";
+import { useNavigate } from "react-router-dom";
 
 export default function Navbar() {
   const [hoverMenu, setHoverMenu] = useState(null);
@@ -14,6 +15,7 @@ export default function Navbar() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { cartCount } = useCart();
   const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
   
   // Get categories from store
   const { 
@@ -46,8 +48,8 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await logout();
+      navigate('/signin');
       setShowLogoutConfirm(false);
-      // Navigation will happen automatically due to auth state change
     } catch (error) {
       console.error('Logout failed:', error);
       setShowLogoutConfirm(false);
@@ -232,16 +234,24 @@ export default function Navbar() {
     </Link>
 
     {/* Logout Button */}
-    {user && (
-      <button
-        onClick={handleLogoutClick}
-        className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity"
-        title="Logout"
-      >
-        <FiLogOut className="text-lg" />
-        <span className="hidden md:inline">Logout</span>
-      </button>
-    )}
+    {user ? (
+    <button
+      onClick={handleLogoutClick}
+      className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity"
+      title="Logout"
+    >
+      <FiLogOut className="text-lg" />
+      <span className="hidden md:inline">Logout</span>
+    </button>
+  ) : (
+    <Link
+      to="/signin"
+      className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity"
+      title="Sign In"
+    >
+      <span className="hidden md:inline">Sign In</span>
+    </Link>
+  )}
   </div>
 </div>
 
