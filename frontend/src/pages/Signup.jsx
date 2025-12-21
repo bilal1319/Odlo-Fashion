@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { FaUser, FaEnvelope, FaLock, FaArrowRight } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 
 const Signup = () => {
@@ -8,7 +8,6 @@ const Signup = () => {
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
   const confirmPasswordRef = useRef(null);
-  const termsRef = useRef(null);
   
   const navigate = useNavigate();
   const { signup, isLoading, error, clearError } = useAuthStore();
@@ -24,7 +23,6 @@ const Signup = () => {
     const email = emailRef.current.value;
     const password = passwordRef.current.value;
     const confirmPassword = confirmPasswordRef.current.value;
-    const termsAccepted = termsRef.current.checked;
 
     if (!fullName || !email || !password || !confirmPassword) {
       setLocalError('Please fill in all fields');
@@ -36,10 +34,7 @@ const Signup = () => {
       return;
     }
 
-    if (!termsAccepted) {
-      setLocalError("Please accept the terms and conditions");
-      return;
-    }
+
 
     try {
 await signup({ username: fullName, email, password });
@@ -146,24 +141,7 @@ await signup({ username: fullName, email, password });
                   </div>
                 </div>
 
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      ref={termsRef}
-                      id="terms"
-                      type="checkbox"
-                      required
-                      disabled={isLoading}
-                      className="h-4 w-4 text-gray-800 focus:ring-gray-800 border-gray-300 rounded disabled:opacity-50"
-                    />
-                  </div>
-                  <div className="ml-3">
-                    <label htmlFor="terms" className="text-sm text-gray-700">
-                      I agree to the Terms of Service and Privacy Policy
-                    </label>
-                  </div>
-                </div>
-
+             
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -177,9 +155,9 @@ await signup({ username: fullName, email, password });
               <div className="mt-8 text-center">
                 <p className="text-gray-600">
                   Already have an account?{' '}
-                  <a href="/signin" className="font-semibold text-gray-900 hover:text-black underline">
+                  <Link to="/signin" className="font-semibold text-gray-900 hover:text-black underline">
                     Sign in
-                  </a>
+                  </Link>
                 </p>
               </div>
             </div>

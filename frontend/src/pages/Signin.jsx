@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { FaEnvelope, FaLock, FaArrowRight, FaShieldAlt } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 
 const Signin = () => {
@@ -132,9 +132,9 @@ const Signin = () => {
               <div className="text-center mt-3">
                 <p className="text-gray-600">
                   Don't have an account?{' '}
-                  <a href="/signup" className="font-semibold text-gray-900 hover:text-black underline">
+                  <Link to="/signup" className="font-semibold text-gray-900 hover:text-black underline">
                     Create account
-                  </a>
+                  </Link>
                 </p>
               </div>
             </div>
