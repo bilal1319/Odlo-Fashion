@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
@@ -177,82 +177,112 @@ export default function Navbar() {
 
       <nav className="bg-black text-white w-full py-4 px-4 md:px-6 fixed top-0 left-0 z-50">
         {/* DESKTOP LAYOUT - Using CSS Grid */}
-<div className="hidden lg:grid grid-cols-3 items-center max-w-7xl mx-auto">
-  {/* LEFT LOGO */}
-  <Link to="/" className="text-lg md:text-xl font-semibold justify-self-start">
-    ODLO
-  </Link>
+        <div className="hidden lg:grid grid-cols-3 items-center max-w-7xl mx-auto">
+          {/* LEFT LOGO */}
+          <Link to="/" className="text-lg md:text-xl font-semibold justify-self-start">
+            ODLO
+          </Link>
 
-  {/* CENTER MENU */}
-  <div className="flex justify-center">
-    <ul className="flex gap-8 text-sm">
-      {menuItems.map((item, index) => (
-        item.submenu ? (
-          // Items with submenus (Services, Bundles)
-          <li
-            key={index}
-            className="relative cursor-default group"
-            onMouseEnter={() => setHoverMenu(item.name.toLowerCase())}
-            onMouseLeave={() => setHoverMenu(null)}
-          >
-            <div className="relative">
-              <Link to={item.to} className="uppercase py-2 block relative">
-                {item.name}
-                <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
-              </Link>
-            </div>
-            {/* Submenu dropdown */}
-          </li>
-        ) : (
-          // Regular menu items
-          <li key={index} className="relative cursor-default group">
-            <Link to={item.to} className="uppercase py-2 block relative">
-              {item.name}
-              <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
+          {/* CENTER MENU */}
+          <div className="flex justify-center">
+            <ul className="flex gap-8 text-sm">
+              {menuItems.map((item, index) => (
+                item.submenu ? (
+                  // Items with submenus (Services)
+                  <li
+                    key={index}
+                    className="relative cursor-default group"
+                    onMouseEnter={() => setHoverMenu(item.name)}
+                    onMouseLeave={() => setHoverMenu(null)}
+                  >
+                    <div className="relative">
+                      <Link to={item.to} className="uppercase py-2  flex gap-x-1 relative group-hover:text-gray-300 transition-colors duration-200">
+                        {item.name}
+                        <FiChevronDown 
+                        className={`w-4 h-4 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                          hoverMenu === item.name ? 'rotate-180' : 'rotate-0'
+                        }`} 
+                      />
+                        <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
+                      </Link>
+                    </div>
+                    {/* Submenu dropdown */}
+                    {hoverMenu === item.name && (
+                      <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 min-w-[280px] z-50">
+                        <div className="bg-black/95 backdrop-blur-sm rounded-lg shadow-2xl border border-gray-800 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                          <div className="p-4">
+                            <div className="mb-3 px-2">
+                              <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Categories</p>
+                            </div>
+                            <ul className="space-y-1">
+                              {item.submenu.map((sub, i) => (
+                                <li key={i}>
+                                  <Link
+                                    to={sub.to}
+                                    className="block py-3 px-4 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200 uppercase text-xs tracking-wider flex items-center justify-between group/subitem"
+                                    onClick={handleCategoryClick}
+                                  >
+                                    <span>{sub.name}</span>
+                                    <span className="opacity-0 group-hover/subitem:opacity-100 transition-opacity duration-200">→</span>
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                ) : (
+                  // Regular menu items
+                  <li key={index} className="relative cursor-default group">
+                    <Link to={item.to} className="uppercase py-2 block relative group-hover:text-gray-300 transition-colors duration-200">
+                      {item.name}
+                      <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
+                    </Link>
+                  </li>
+                )
+              ))}
+            </ul>
+          </div>
+
+          {/* RIGHT SIDE */}
+          <div className="flex items-center gap-6 justify-self-end">
+            {/* Cart with Icon and Badge */}
+            <Link 
+              to="/cart" 
+              className="relative p-2 hover:opacity-80 transition-opacity group"
+              title="Cart"
+            >
+              <BsCart3 className="text-xl group-hover:scale-110 transition-transform duration-200" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold animate-pulse">
+                  {cartCount}
+                </span>
+              )}
             </Link>
-          </li>
-        )
-      ))}
-    </ul>
-  </div>
 
-  {/* RIGHT SIDE */}
-  <div className="flex items-center gap-6 justify-self-end">
-    {/* Cart with Icon and Badge */}
-    <Link 
-      to="/cart" 
-      className="relative p-2 hover:opacity-80 transition-opacity"
-      title="Cart"
-    >
-      <BsCart3 className="text-xl" />
-      {cartCount > 0 && (
-        <span className="absolute -top-1 -right-1 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
-          {cartCount}
-        </span>
-      )}
-    </Link>
-
-    {/* Logout Button */}
-    {user ? (
-    <button
-      onClick={handleLogoutClick}
-      className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity"
-      title="Logout"
-    >
-      <FiLogOut className="text-lg" />
-      <span className="hidden md:inline">Logout</span>
-    </button>
-  ) : (
-    <Link
-      to="/signin"
-      className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity"
-      title="Sign In"
-    >
-      <span className="hidden md:inline">Sign In</span>
-    </Link>
-  )}
-  </div>
-</div>
+            {/* Logout Button */}
+            {user ? (
+              <button
+                onClick={handleLogoutClick}
+                className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity group"
+                title="Logout"
+              >
+                <FiLogOut className="text-lg  transition-transform duration-200" />
+                <span className="hidden md:inline">Logout</span>
+              </button>
+            ) : (
+              <Link
+                to="/signin"
+                className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                title="Sign In"
+              >
+                <span className="hidden md:inline">Sign In</span>
+              </Link>
+            )}
+          </div>
+        </div>
 
         {/* MOBILE LAYOUT */}
         <div className="lg:hidden flex items-center justify-between">
@@ -329,7 +359,6 @@ export default function Navbar() {
                   onClick={closeMobileMenu}
                 >
                   <BsCart3 className="text-lg" />
-                 
                   {cartCount > 0 && (
                     <span className="absolute left-7 top-0 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
                       {cartCount}
