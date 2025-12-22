@@ -131,6 +131,19 @@ export const CartProvider = ({ children }) => {
       return 0;
     }
   };
+  const getTotalWithTax = () => {
+  const subtotal = getTotalPrice();
+  const taxRate = 0.23; // 23%
+  const taxAmount = subtotal * taxRate;
+  const totalWithTax = subtotal + taxAmount;
+  
+  return {
+    subtotal: subtotal,
+    taxRate: taxRate,
+    taxAmount: taxAmount,
+    totalWithTax: totalWithTax
+  };
+};
 
   // Optional: Add a function to fix old cart data
   const fixCartPrices = () => {
@@ -168,7 +181,8 @@ export const CartProvider = ({ children }) => {
       updateQuantity,
       clearCart,
       getTotalPrice,
-      fixCartPrices // Optional: expose for debugging
+      fixCartPrices,
+      getTotalWithTax
     }}>
       {children}
     </CartContext.Provider>

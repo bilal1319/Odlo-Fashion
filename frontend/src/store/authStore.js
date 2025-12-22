@@ -43,6 +43,82 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
+  // Signup start (send verification email)
+signupStart: async (email) => {
+  try {
+    set({ isLoading: true, error: null });
+    
+    const response = await axios.post('/auth/signup/start', { email });
+    
+    set({ isLoading: false });
+    return response.data;
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || 'Signup failed';
+    set({ 
+      error: errorMessage,
+      isLoading: false 
+    });
+    throw error;
+  }
+},
+
+// Verify email code
+verifyEmailCode: async (token, code) => {
+  try {
+    set({ isLoading: true, error: null });
+    
+    const response = await axios.post('/auth/signup/verify', {
+      token,
+      code
+    });
+    
+    set({ isLoading: false });
+    return response.data;
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || 'Verification failed';
+    set({ 
+      error: errorMessage,
+      isLoading: false 
+    });
+    throw error;
+  }
+},
+
+// Complete signup with password
+signupComplete: async (token, password) => {
+  try {
+    set({ isLoading: true, error: null });
+    
+    const response = await axios.post('/auth/signup/complete', {
+      token,
+      password
+    });
+    
+    // Set user state after successful signup
+    const userData = {
+      id: response.data.user.id,
+      username: response.data.user.username,
+      email: response.data.user.email,
+      role: response.data.user.role
+    };
+    
+    set({ 
+      user: userData,
+      isAuthenticated: true,
+      isLoading: false 
+    });
+    
+    return response.data;
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || 'Account creation failed';
+    set({ 
+      error: errorMessage,
+      isLoading: false 
+    });
+    throw error;
+  }
+},
+
   // Admin login
   adminLogin: async (email, password) => {
     try {

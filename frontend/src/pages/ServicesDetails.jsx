@@ -162,7 +162,7 @@ const ServicesDetails = () => {
                 
                 {/* Price */}
                 <div className="flex items-center space-x-4 mb-4">
-                  <span className="text-4xl font-bold text-green-800">
+                  <span className="text-4xl font-serif font-bold text-green-800">
                     ${product.price}
                   </span>
                   {product.originalPrice && (

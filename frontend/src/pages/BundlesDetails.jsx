@@ -217,7 +217,7 @@ const BundleDetail = () => {
                 {/* Price and Savings */}
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                   <div className="flex items-baseline">
-                    <span className="text-4xl font-bold text-green-800">
+                    <span className="text-4xl font-serif font-bold text-green-800">
                       ${bundle.price}
                     </span>
                     {bundle.originalPrice && (

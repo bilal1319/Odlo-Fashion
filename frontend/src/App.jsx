@@ -23,9 +23,11 @@ import AdminLogin from './pages/AdminLogin';
 import AdminSignup from './pages/AdminSignup';
 import AdminDashboard from './pages/AdminDashboard';
 import useAuthStore from './store/authStore';
-import Success from './pages/Sucess';
 import useProductsStore from './store/productsSrtore';
 import AdminLayout from './components/AdminLayout';
+import UserAuthWrapper from './components/UserAuthWrapper';
+import VerifyEmail from './pages/VerifyEmail';
+
 
 function App() {
   return (
@@ -113,22 +115,27 @@ function Layout() {
           <Route path="/bundles" element={<Bundles />} />
           <Route path="/bundle/:slug" element={<BundleDetails />} />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/checkout/success" element={<CheckoutSuccess />} />
-          <Route path="/checkout/cancel" element={<CheckoutCancel />} />
+          <Route path="/checkout" element={<UserAuthWrapper><Checkout /></UserAuthWrapper>} />
+          <Route path="/checkout/success" element={<UserAuthWrapper><CheckoutSuccess /></UserAuthWrapper>} />
+          <Route path="/checkout/cancel" element={<UserAuthWrapper><CheckoutCancel /></UserAuthWrapper>} />
           <Route path='/signin' element={<Signin />} />
           <Route path='/signup' element={<Signup />} />
+          <Route path='/verify' element={<VerifyEmail />} />
           
           {/* Admin Auth Routes (without layout) */}
           <Route path='/admin/login' element={<AdminLogin />} />
           <Route path='/admin/signup' element={<AdminSignup />} />
           
           {/* Admin Routes with Sidebar Layout */}
+          
           <Route path="/admin" element={<AdminLayout />}>
+ 
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="service" element={<ServicesManagement />} />
             <Route path="bundle" element={<BundlesManagement />} />
+
           </Route>
+          
         </Routes>
       </div>
     </div>

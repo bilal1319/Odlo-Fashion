@@ -48,7 +48,6 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/signin');
       setShowLogoutConfirm(false);
     } catch (error) {
       console.error('Logout failed:', error);

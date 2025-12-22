@@ -52,7 +52,7 @@ const Carousel = () => {
 
   return (
     <div 
-      className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] lg:h-[500px] overflow-hidden"
+      className="relative w-full  h-[300px] sm:h-[350px] md:h-[400px] lg:h-[500px] overflow-hidden"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -67,10 +67,10 @@ const Carousel = () => {
       {/* Left arrow - Responsive sizing */}
       <button
         onClick={goToPrevious}
-        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10
+        className="absolute left-2 cursor-pointer sm:left-4  top-1/2 -translate-y-1/2 z-10
           bg-black/50 hover:bg-black/70 text-white
           w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center
-          text-lg sm:text-xl transition-all duration-300"
+          text-xl sm:text-3xl transition-all duration-300"
         aria-label="Previous slide"
       >
         ‹
@@ -79,10 +79,10 @@ const Carousel = () => {
       {/* Right arrow - Responsive sizing */}
       <button
         onClick={goToNext}
-        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10
+        className="absolute cursor-pointer right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10
           bg-black/50 hover:bg-black/70 text-white
           w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center
-          text-lg sm:text-xl transition-all duration-300"
+          text-xl sm:text-3xl transition-all duration-300"
         aria-label="Next slide"
       >
         ›
@@ -100,8 +100,8 @@ const Carousel = () => {
                 : "bg-white/50 hover:bg-white/70"
             } ${
               index === currentIndex 
-                ? "w-3 h-3 sm:w-4 sm:h-4" 
-                : "w-2 h-2 sm:w-3 sm:h-3"
+                ? "w-1.5 h-1.5 sm:w-2.5 sm:h-2.5" 
+                : "w-1 h-1 sm:w-2 sm:h-2"
             }`}
             aria-label={`Go to slide ${index + 1}`}
           />

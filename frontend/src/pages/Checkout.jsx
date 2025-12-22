@@ -5,7 +5,9 @@ import { Link } from "react-router-dom";
 import axiosInstance from "../utils/axiosInstance";
 
 const Checkout = () => {
-  const { cart, getTotalPrice, clearCart } = useCart();
+  const { cart, getTotalPrice, getTotalWithTax, clearCart } = useCart();
+  const taxData = getTotalWithTax();
+  
   const [step, setStep] = useState('shipping');
   const [formData, setFormData] = useState({
     firstName: '',
@@ -21,16 +23,7 @@ const Checkout = () => {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
 
-  const pakistanCities = [
-    "Karachi", "Lahore", "Islamabad", "Rawalpindi", "Faisalabad", "Multan",
-    "Gujranwala", "Peshawar", "Quetta", "Sialkot", "Bahawalpur", "Sargodha",
-    "Sukkur", "Larkana", "Sheikhupura", "Rahim Yar Khan", "Jhang", "Mardan",
-    "Gujrat", "Kasur", "Mingora", "Nawabshah", "Sahiwal", "Okara",
-    "Mirpur Khas", "Chiniot", "Kamoke", "Hyderabad", "Abbottabad",
-    "Wah Cantonment", "Khanewal", "Dera Ghazi Khan", "Jacobabad",
-    "Muzaffargarh", "Khanpur", "Gojra", "Bahawalnagar", "Muridke",
-    "Pakpattan", "Jhelum", "Chakwal"
-  ];
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -290,7 +283,7 @@ const Checkout = () => {
                   <div className="border-t pt-6">
                     <div className="flex justify-between font-bold text-lg mb-6">
                       <span>Total</span>
-                      <span>${getTotalPrice().toFixed(2)}</span>
+                      <span>${taxData.totalWithTax.toFixed(2)}</span>
                     </div>
                   </div>
 
@@ -373,7 +366,7 @@ const Checkout = () => {
               <div className="space-y-3">
                 <div className="flex justify-between font-bold text-lg pt-2">
                   <span>Total</span>
-                  <span>${getTotalPrice().toFixed(2)}</span>
+                  <span>${taxData.totalWithTax.toFixed(2)}</span>
                 </div>
               </div>
 

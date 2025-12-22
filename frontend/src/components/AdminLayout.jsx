@@ -3,11 +3,13 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Sidebar from './Sidebar';
+import AdminAuthWrapper from './AdminAuthWrapper';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
+    <AdminAuthWrapper>
     <div className="min-h-screen bg-gray-100 relative">
       {/* Sidebar - Overlay on all screens */}
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
@@ -82,6 +84,7 @@ const AdminLayout = () => {
        
       </div>
     </div>
+    </AdminAuthWrapper>
   );
 };
 
