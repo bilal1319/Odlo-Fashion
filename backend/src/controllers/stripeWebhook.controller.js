@@ -1,18 +1,20 @@
-import dotenv from "dotenv";
-
-dotenv.config();
-import mongoose from "mongoose";
+import express from "express";
 import Stripe from "stripe";
+import Order from '../models/order.model.js';
+import { emitNewOrder, emitOrderStatusChange } from '../socket.js';
 
+const router = express.Router();
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("STRIPE_SECRET_KEY is missing from environment variables");
-}
+const getStripe = () => {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('STRIPE_SECRET_KEY is not defined in environment variables');
+  }
+  return new Stripe(process.env.STRIPE_SECRET_KEY);
+};
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-export const handleStripeWebhook = async (req, res) => {
-    const sig = req.headers["stripe-signature"];
+router.post("/", async (req, res) => {
+  const stripe = getStripe();
+  const sig = req.headers["stripe-signature"];
 
   let event;
 
@@ -23,64 +25,79 @@ export const handleStripeWebhook = async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("Webhook signature verification failed:", err.message);
+    console.error("❌ Webhook signature verification failed:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   try {
-    const db = mongoose.connection.db;
-
-    if (!db) {
-      return res.status(500).send("DB not connected");
-    }
-
-    // ✅ We only create orders for successful checkout completion
+    // Handle checkout.session.completed event
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
+      const orderId = session.metadata.orderId;
+      const userId = session.metadata.userId;
 
-      // Email from Stripe (trusted)
-      const email =
-        session.customer_details?.email ||
-        session.customer_email ||
-        null;
-
-      // Items from metadata (what was bought)
-      let items = [];
-      if (session.metadata?.items) {
-        try {
-          items = JSON.parse(session.metadata.items);
-        } catch (_) {
-          items = [];
-        }
+      if (!orderId) {
+        console.error("❌ No orderId in Stripe session metadata");
+        return res.json({ received: true });
       }
 
-      // ✅ Idempotency: don’t insert duplicate orders
-      const existing = await db.collection("orders").findOne({
-        "stripe.sessionId": session.id
-      });
+      // Find order by ID (from metadata)
+      const order = await Order.findById(orderId);
+      
+      if (!order) {
+        console.error(`❌ Order not found: ${orderId}`);
+        return res.json({ received: true });
+      }
 
-      if (!existing) {
-        const orderDoc = {
-          email,
-          items, // you can also enrich this later with titles/prices
-          amountPaid: session.amount_total ? session.amount_total / 100 : null,
-          currency: session.currency ? session.currency.toUpperCase() : null,
-          stripe: {
-            sessionId: session.id,
-            paymentIntentId: session.payment_intent || null
-          },
-          status: "paid",
-          createdAt: new Date()
-        };
+      // Verify user matches
+      if (userId && order.user.toString() !== userId) {
+        console.error(`❌ User mismatch: order user ${order.user} vs metadata user ${userId}`);
+        // Still update payment status but log warning
+      }
 
-        await db.collection("orders").insertOne(orderDoc);
+      // Verify amount matches
+      const expectedAmount = Math.round(order.total * 100); // in cents
+      if (session.amount_total !== expectedAmount) {
+        console.error(`❌ Amount mismatch: order ${expectedAmount} vs session ${session.amount_total}`);
+        // Log alert but still update status
+      }
+
+      // Update order status
+      if (order.status !== 'paid') {
+        order.status = 'paid';
+        order.stripe.paymentIntentId = session.payment_intent;
+        order.stripe.customerId = session.customer;
+        order.paidAt = new Date();
+        await order.save();
+
+        console.log(`✅ Webhook: Order ${orderId} marked as paid`);
+        
+        // Emit WebSocket event
+        emitOrderStatusChange(order.toObject());
+      } else {
+        console.log(`ℹ️ Order ${orderId} already paid, skipping update`);
       }
     }
 
-    // Stripe expects a 2xx quickly
+    // Handle expired sessions
+    if (event.type === "checkout.session.expired") {
+      const session = event.data.object;
+      const orderId = session.metadata.orderId;
+
+      if (orderId) {
+        await Order.findByIdAndUpdate(orderId, {
+          status: 'expired',
+          updatedAt: new Date()
+        });
+        console.log(`🕒 Order ${orderId} expired`);
+      }
+    }
+
     res.json({ received: true });
   } catch (err) {
     console.error("Webhook handling failed:", err);
     res.status(500).send("Webhook handler failed");
   }
-}
+});
+
+export default router;

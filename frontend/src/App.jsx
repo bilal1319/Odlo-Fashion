@@ -27,6 +27,8 @@ import useProductsStore from './store/productsSrtore';
 import AdminLayout from './components/AdminLayout';
 import UserAuthWrapper from './components/UserAuthWrapper';
 import VerifyEmail from './pages/VerifyEmail';
+import UserOrders from './pages/UserOrders';
+import Footer from './components/Footer';
 
 
 function App() {
@@ -118,6 +120,7 @@ function Layout() {
           <Route path="/checkout" element={<UserAuthWrapper><Checkout /></UserAuthWrapper>} />
           <Route path="/checkout/success" element={<UserAuthWrapper><CheckoutSuccess /></UserAuthWrapper>} />
           <Route path="/checkout/cancel" element={<UserAuthWrapper><CheckoutCancel /></UserAuthWrapper>} />
+          <Route path="/orders" element={<UserAuthWrapper><UserOrders /></UserAuthWrapper>} />
           <Route path='/signin' element={<Signin />} />
           <Route path='/signup' element={<Signup />} />
           <Route path='/verify' element={<VerifyEmail />} />
@@ -137,6 +140,8 @@ function Layout() {
           </Route>
           
         </Routes>
+
+        <Footer/>
       </div>
     </div>
   );

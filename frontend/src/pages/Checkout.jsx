@@ -5,14 +5,13 @@ import { Link } from "react-router-dom";
 import axiosInstance from "../utils/axiosInstance";
 
 const Checkout = () => {
-  const { cart, getTotalPrice, getTotalWithTax, clearCart } = useCart();
+  const { cart, getTotalPrice, getTotalWithTax, clearCart, calculateItemWithTax } = useCart();
   const taxData = getTotalWithTax();
   
   const [step, setStep] = useState('shipping');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: '',
     address: '',
     city: '',
     state: '',
@@ -22,8 +21,6 @@ const Checkout = () => {
   });
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
-
-
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -36,8 +33,8 @@ const Checkout = () => {
   const handleShippingSubmit = (e) => {
     e.preventDefault();
     
-    if (!formData.firstName || !formData.lastName || !formData.email || 
-        !formData.address ||  !formData.phone) {
+    if (!formData.firstName || !formData.lastName || 
+        !formData.address || !formData.phone) {
       alert('Please fill in all required fields');
       return;
     }
@@ -56,19 +53,19 @@ const Checkout = () => {
     setError('');
 
     try {
-      // Prepare cart items for Stripe
+      // Prepare cart items with tax-included prices for Stripe
       const items = cart.map(item => ({
         id: item.id,
         type: item.type,
         title: item.title,
-        price: item.price,
+        price: calculateItemWithTax(item.price),
         quantity: item.quantity || 1
       }));
 
       // Call backend to create Stripe checkout session
       const response = await axiosInstance.post('/checkout/prepare', {
         items,
-        email: formData.email
+        totalWithTax: taxData.totalWithTax
       });
 
       if (response.data.success && response.data.checkoutUrl) {
@@ -158,19 +155,6 @@ const Checkout = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2">Email Address *</label>
-                    <input 
-                      type="email" 
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="Email address" 
-                      className="w-full border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
                     <label className="block text-sm font-medium mb-2">Street Address *</label>
                     <input 
                       type="text" 
@@ -184,48 +168,6 @@ const Checkout = () => {
                   </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* <div>
-                        <label className="block text-sm font-medium mb-2">Country</label>
-                        <select
-                          name="country"
-                          value={formData.country}
-                          onChange={handleInputChange}
-                          className="w-full border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                        >
-                          <option>Pakistan</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">State/Province</label>
-                        <input
-                          type="text"
-                          name="state"
-                          value={formData.state}
-                          onChange={handleInputChange}
-                          placeholder="State/Province"
-                          className="w-full border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                      </div> */}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* <div>
-                        <label className="block text-sm font-medium mb-2">City *</label>
-                        <select
-                          name="city"
-                          value={formData.city}
-                          onChange={handleInputChange}
-                          className="w-full border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                          required
-                        >
-                          <option value="">--Select City--</option>
-                          {pakistanCities.map((city, index) => (
-                            <option key={index} value={city}>
-                              {city}
-                            </option>
-                          ))}
-                        </select>
-                      </div> */}
                       <div>
                         <label className="block text-sm font-medium mb-2">Zip/Postal Code</label>
                         <input
@@ -282,7 +224,7 @@ const Checkout = () => {
 
                   <div className="border-t pt-6">
                     <div className="flex justify-between font-bold text-lg mb-6">
-                      <span>Total</span>
+                      <span>Total (including tax)</span>
                       <span>${taxData.totalWithTax.toFixed(2)}</span>
                     </div>
                   </div>
@@ -347,7 +289,10 @@ const Checkout = () => {
                           <div>
                             <h4 className="font-medium text-sm">{item.title}</h4>
                             <p className="text-xs text-gray-600 mt-1">{item.useCase}</p>
-                            <p className="text-sm font-semibold mt-1">${item.price}</p>
+                            <div className="text-sm mt-1">
+                              <span className="font-semibold">${item.price}</span>
+                              <span className="text-gray-600 ml-2">+ tax</span>
+                            </div>
                           </div>
                           {item.quantity > 1 && (
                             <div className="flex-shrink-0">
@@ -364,7 +309,15 @@ const Checkout = () => {
               </div>
 
               <div className="space-y-3">
-                <div className="flex justify-between font-bold text-lg pt-2">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span>${getTotalPrice().toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Tax</span>
+                  <span>${taxData.taxAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg pt-2 border-t">
                   <span>Total</span>
                   <span>${taxData.totalWithTax.toFixed(2)}</span>
                 </div>

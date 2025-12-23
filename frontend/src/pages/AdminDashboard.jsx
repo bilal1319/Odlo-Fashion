@@ -134,7 +134,7 @@ const AdminDashboard = () => {
                 {newOrderAlert.isStatusChange ? 'Order Status Updated!' : 'New Order Received!'}
               </p>
               <p className="text-sm opacity-90">
-                {newOrderAlert.email} - ${newOrderAlert.amountPaid?.toFixed(2)}
+                {newOrderAlert.email} - ${newOrderAlert.amountPaid?.toFixed(2) || newOrderAlert?.total}
               </p>
               {newOrderAlert.isStatusChange && (
                 <p className="text-xs opacity-75">Status: {newOrderAlert.status?.toUpperCase()}</p>
@@ -202,7 +202,7 @@ const AdminDashboard = () => {
             <div>
               <p className="text-sm text-gray-600">Total Revenue</p>
               <p className="text-2xl md:text-3xl font-bold text-gray-900">
-                ${orders.reduce((sum, o) => sum + (o.amountPaid || 0), 0).toFixed(2)}
+                ${orders.reduce((sum, o) => sum + (o.amountPaid || 0), 0).toFixed(2) }
               </p>
             </div>
             <div className="h-10 w-10 md:h-12 md:w-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -320,7 +320,7 @@ const AdminDashboard = () => {
                     </td>
                     <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900">
-                        ${order.amountPaid?.toFixed(2) || '0.00'}
+                        ${order.amountPaid?.toFixed(2) || order?.total || '0.00'}
                       </div>
                       <div className="text-xs text-gray-500">
                         {order.currency || 'USD'}

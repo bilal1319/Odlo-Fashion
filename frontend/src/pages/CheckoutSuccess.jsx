@@ -74,7 +74,7 @@ const CheckoutSuccess = () => {
                   Status: <span className="font-semibold uppercase">{orderDetails.status}</span>
                 </p>
                 <p className="text-sm text-green-800">
-                  Amount: <span className="font-semibold">${orderDetails.amountPaid?.toFixed(2)} {orderDetails.currency}</span>
+                  Amount: <span className="font-semibold">${orderDetails?.total} {orderDetails?.currency}</span>
                 </p>
               </div>
             )}

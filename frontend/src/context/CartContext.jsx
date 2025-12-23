@@ -102,6 +102,11 @@ export const CartProvider = ({ children }) => {
     localStorage.removeItem('odlo-cart');
   };
 
+  const calculateItemWithTax = (price) => {
+    const taxRate = 0.23; 
+    return price * (1 + taxRate);
+  };
+
   // FIXED: This function now handles both string and number prices
   const getTotalPrice = () => {
     try {
@@ -145,6 +150,7 @@ export const CartProvider = ({ children }) => {
   };
 };
 
+
   // Optional: Add a function to fix old cart data
   const fixCartPrices = () => {
     setCart(prevCart => 
@@ -182,7 +188,8 @@ export const CartProvider = ({ children }) => {
       clearCart,
       getTotalPrice,
       fixCartPrices,
-      getTotalWithTax
+      getTotalWithTax,
+      calculateItemWithTax
     }}>
       {children}
     </CartContext.Provider>

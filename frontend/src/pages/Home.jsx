@@ -50,7 +50,6 @@ const Home = () => {
         </h2>
         <BundleCarousel services={bundles} />
       </div>
-      <Footer/>
     </div>
   );
 };

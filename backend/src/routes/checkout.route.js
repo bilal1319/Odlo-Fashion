@@ -2,6 +2,7 @@ import express from "express";
 import Stripe from "stripe";
 import Order from '../models/order.model.js';
 import { emitNewOrder } from '../socket.js';
+import { protect } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -13,12 +14,16 @@ const getStripe = () => {
   return new Stripe(process.env.STRIPE_SECRET_KEY);
 };
 
-
-router.post("/prepare", async (req, res) => {
+router.post("/prepare", protect, async (req, res) => {
   try {
     const stripe = getStripe();
-    let { items, email } = req.body;
-
+    
+    // Get authenticated user data from middleware
+    const userId = req.user._id;
+    const userEmail = req.user.email;
+    
+    let { items, totalWithTax } = req.body; // Get items and totalWithTax from frontend
+    
     // Parse items if it's a string
     if (typeof items === 'string') {
       try {
@@ -38,17 +43,13 @@ router.post("/prepare", async (req, res) => {
       });
     }
 
-    if(!email) {
-        return res.status(400).json({
-            success: false,
-            message: "Email is required"
-        })
-    }
-
+    // Frontend already applied 23% tax, so use items as-is
     const lineItems = [];
+    let subtotal = 0;
 
     for (const item of items) {
       // Extract numeric price from string (e.g., "$300" -> 300)
+      // Note: Frontend should send tax-included price already
       let price = item.price;
       if (typeof price === 'string') {
         price = parseFloat(price.replace(/[$,]/g, ''));
@@ -58,6 +59,9 @@ router.post("/prepare", async (req, res) => {
         console.error(`Invalid price for item: ${item.title}`, item);
         continue;
       }
+
+      const itemSubtotal = price * (item.quantity || 1);
+      subtotal += itemSubtotal;
 
       lineItems.push({
         price_data: {
@@ -79,72 +83,97 @@ router.post("/prepare", async (req, res) => {
       });
     }
 
+    // Calculate totals (frontend already calculated tax)
+    const total = totalWithTax || lineItems.reduce((sum, item) => 
+      sum + (item.price_data.unit_amount / 100) * item.quantity, 0
+    );
+    
+    // Calculate tax from frontend total or estimate
+    const tax = totalWithTax ? totalWithTax - subtotal : subtotal * 0.23;
+
+    // Prepare items array for database
+    const orderItems = items.map(item => {
+      const itemPrice = typeof item.price === 'string' ? 
+        parseFloat(item.price.replace(/[$,]/g, '')) : 
+        Number(item.price) || 0;
+      const itemQuantity = Number(item.quantity) || 1;
+      const itemSubtotal = itemPrice * itemQuantity;
+      const itemTax = itemSubtotal * 0.23; // Assuming 23% tax per item
+      const itemTotal = itemSubtotal + itemTax;
+
+      return {
+        id: String(item.id),
+        type: String(item.type || 'product'),
+        title: String(item.title || 'Unknown'),
+        useCase: item.useCase || '',
+        price: itemPrice,
+        quantity: itemQuantity,
+        subtotal: itemSubtotal,
+        tax: itemTax,
+        total: itemTotal
+      };
+    });
+
+    // ✅ Create order FIRST in database with user reference
+    const newOrder = await Order.create({
+      user: userId,           // From authenticated user
+      email: userEmail,       // From user account (verified email)
+      items: orderItems,
+      subtotal: subtotal,
+      tax: tax,
+      total: total,
+      currency: 'USD',
+      stripe: {
+        sessionId: null,      // Will be set after Stripe session creation
+        paymentIntentId: null,
+        customerId: null
+      },
+      status: 'pending',
+      testMode: process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_'),
+      createdAt: new Date()
+    });
+
+    console.log('📝 Created order in database:', {
+      orderId: newOrder._id,
+      userId: userId,
+      email: userEmail,
+      itemCount: items.length,
+      subtotal: subtotal,
+      tax: tax,
+      total: total
+    });
+
+    // ✅ Create Stripe session with minimal metadata (orderId only)
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       line_items: lineItems,
-      customer_email: email,
+      customer_email: userEmail,  // Use authenticated user's email
       metadata: {
-        items: JSON.stringify(items)
+        orderId: newOrder._id.toString(),  // ONLY store order ID (not items!)
+        userId: userId.toString()           // For verification
       },
       success_url: `${process.env.FRONTEND_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/checkout/cancel`
+      cancel_url: `${process.env.FRONTEND_URL}/checkout/cancel`,
+      expires_at: Math.floor(Date.now() / 1000) + (30 * 60) // Session expires in 30 minutes
     });
 
-    // Create pending order in database
-    try {
-      const totalAmount = lineItems.reduce((sum, item) => 
-        sum + (item.price_data.unit_amount / 100) * item.quantity, 0
-      );
+    // ✅ Update order with Stripe session ID
+    newOrder.stripe.sessionId = session.id;
+    await newOrder.save();
 
-      console.log('📝 Creating order with data:', {
-        email,
-        sessionId: session.id,
-        totalAmount,
-        itemsCount: items.length,
-        itemsType: typeof items,
-        firstItem: items[0]
-      });
+    // Emit WebSocket event for new pending order
+    emitNewOrder(newOrder.toObject());
 
-      // Prepare items array for database
-      const orderItems = items.map(item => ({
-        id: String(item.id),
-        type: String(item.type || 'product'),
-        title: String(item.title || 'Unknown'),
-        price: typeof item.price === 'string' ? parseFloat(item.price.replace(/[$,]/g, '')) : Number(item.price) || 0,
-        quantity: Number(item.quantity) || 1
-      }));
-
-      console.log('📦 Prepared order items:', orderItems);
-
-      const newOrder = await Order.create({
-        email,
-        items: orderItems,
-        amountPaid: totalAmount,
-        currency: 'USD',
-        stripe: {
-          sessionId: session.id,
-          paymentIntentId: null,
-          customerId: null
-        },
-        status: 'pending',
-        testMode: process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_')
-      });
-
-      // Emit WebSocket event for new pending order
-      emitNewOrder(newOrder.toObject());
-
-      console.log(`✅ Created pending order for session: ${session.id}, Order ID: ${newOrder._id}`);
-    } catch (orderError) {
-      console.error('❌ Error creating pending order:', orderError.message);
-      console.error('Full error:', orderError);
-      // Don't fail the checkout if order creation fails
-    }
+    console.log(`✅ Created Stripe session: ${session.id} for order: ${newOrder._id}`);
 
     res.json({
       success: true,
-      checkoutUrl: session.url
+      checkoutUrl: session.url,
+      sessionId: session.id,
+      orderId: newOrder._id
     });
+
   } catch (error) {
     console.error("Checkout error:", error);
     res.status(500).json({
@@ -156,10 +185,11 @@ router.post("/prepare", async (req, res) => {
 });
 
 // Verify payment endpoint - use this in dev when webhooks can't reach localhost
-router.get("/verify/:sessionId", async (req, res) => {
+router.get("/verify/:sessionId", protect, async (req, res) => {
   try {
     const stripe = getStripe();
     const { sessionId } = req.params;
+    const userId = req.user._id; // Get authenticated user ID
 
     // Retrieve the session from Stripe to verify payment
     const session = await stripe.checkout.sessions.retrieve(sessionId);
@@ -167,10 +197,21 @@ router.get("/verify/:sessionId", async (req, res) => {
     console.log(`🔍 Verifying session ${sessionId}, payment_status: ${session.payment_status}`);
 
     if (session.payment_status === "paid") {
-      // Check if order is already paid to avoid duplicate updates
-      const existingOrder = await Order.findOne({ "stripe.sessionId": sessionId });
+      // Find order by session ID and user ID
+      const existingOrder = await Order.findOne({ 
+        "stripe.sessionId": sessionId,
+        user: userId // Ensure order belongs to this user
+      });
       
-      if (existingOrder && existingOrder.status === "paid") {
+      if (!existingOrder) {
+        console.log(`⚠️ No order found for session: ${sessionId} and user: ${userId}`);
+        return res.status(404).json({ 
+          success: false, 
+          message: "Order not found" 
+        });
+      }
+
+      if (existingOrder.status === "paid") {
         console.log(`✅ Order already marked as paid: ${existingOrder._id}`);
         return res.json({ 
           success: true, 
@@ -179,13 +220,26 @@ router.get("/verify/:sessionId", async (req, res) => {
         });
       }
 
+      // Verify metadata matches
+      if (session.metadata.orderId !== existingOrder._id.toString()) {
+        console.error(`❌ Order ID mismatch: metadata ${session.metadata.orderId} vs db ${existingOrder._id}`);
+        return res.status(400).json({
+          success: false,
+          message: "Order verification failed"
+        });
+      }
+
       // Update the order to paid
       const order = await Order.findOneAndUpdate(
-        { "stripe.sessionId": sessionId },
+        { 
+          _id: existingOrder._id,
+          user: userId // Additional security check
+        },
         { 
           status: "paid",
           "stripe.paymentIntentId": session.payment_intent,
-          "stripe.customerId": session.customer
+          "stripe.customerId": session.customer,
+          paidAt: new Date()
         },
         { new: true }
       );
@@ -200,12 +254,6 @@ router.get("/verify/:sessionId", async (req, res) => {
           success: true, 
           message: "Payment verified", 
           order 
-        });
-      } else {
-        console.log(`⚠️ No order found for session: ${sessionId}`);
-        return res.status(404).json({ 
-          success: false, 
-          message: "Order not found" 
         });
       }
     }

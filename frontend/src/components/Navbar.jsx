@@ -63,7 +63,7 @@ export default function Navbar() {
     setShowLogoutConfirm(false);
   };
 
-  // Menu items with dynamic categories
+// Menu items with dynamic categories
   const getMenuItems = () => {
     // Default categories in case API fails or is loading
     const defaultCategories = [
@@ -78,7 +78,8 @@ export default function Navbar() {
     // Use fetched categories or defaults
     const displayCategories = categories.length > 0 ? categories : defaultCategories;
 
-    return [
+    // Base menu items
+    const baseMenuItems = [
       {
         name: "Home",
         to: "/"
@@ -96,6 +97,16 @@ export default function Navbar() {
         to: "/bundles",
       }
     ];
+
+    // Add Orders menu item if user is logged in and has role 'user'
+    if (user && user.role === 'user') {
+      baseMenuItems.push({
+        name: "Orders",
+        to: "/orders",
+      });
+    }
+
+    return baseMenuItems;
   };
 
   const menuItems = getMenuItems();
@@ -235,12 +246,14 @@ export default function Navbar() {
                   </li>
                 ) : (
                   // Regular menu items
+                  
                   <li key={index} className="relative cursor-default group">
                     <Link to={item.to} className="uppercase py-2 block relative group-hover:text-gray-300 transition-colors duration-200">
                       {item.name}
                       <span className="absolute bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
                     </Link>
                   </li>
+                  
                 )
               ))}
             </ul>
