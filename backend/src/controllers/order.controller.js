@@ -1,5 +1,5 @@
 import Order from "../models/order.model.js";
-import { generateOrderReceipt } from "../utils/pdfgenerator.js";
+import { generateOrderReceipt } from "../utils/pdfGenerator.js";
 
 // Get all orders (admin only)
 export const getAllOrders = async (req, res) => {
