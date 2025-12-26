@@ -29,6 +29,8 @@ import UserAuthWrapper from './components/UserAuthWrapper';
 import VerifyEmail from './pages/VerifyEmail';
 import UserOrders from './pages/UserOrders';
 import Footer from './components/Footer';
+import ForgotPasswordPage from './pages/ForgotPassword';
+import ResetPasswordPage from './pages/ResetPassword';
 
 
 function App() {
@@ -124,6 +126,8 @@ function Layout() {
           <Route path='/signin' element={<Signin />} />
           <Route path='/signup' element={<Signup />} />
           <Route path='/verify' element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           
           {/* Admin Auth Routes (without layout) */}
           <Route path='/admin/login' element={<AdminLogin />} />
@@ -141,7 +145,7 @@ function Layout() {
           
         </Routes>
 
-        <Footer/>
+        {showNavbar && <Footer/>}
       </div>
     </div>
   );

@@ -16,6 +16,11 @@ const verificationTokenSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+   purpose: {
+    type: String,
+    enum: ['signup', 'password-reset', 'email-change'],
+    default: 'signup'
+  },
   expiresAt: {
     type: Date,
     required: true,

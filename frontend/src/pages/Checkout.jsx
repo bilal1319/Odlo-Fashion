@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import axiosInstance from "../utils/axiosInstance";
 
 const Checkout = () => {
-  const { cart, getTotalPrice, getTotalWithTax, clearCart, calculateItemWithTax } = useCart();
+  const { cart, getTotalPrice, getTotalWithTax, clearCart } = useCart();
   const taxData = getTotalWithTax();
   
   const [step, setStep] = useState('shipping');
@@ -53,19 +53,21 @@ const Checkout = () => {
     setError('');
 
     try {
-      // Prepare cart items with tax-included prices for Stripe
+      // Send BASE prices WITHOUT tax to backend
+      // Backend will handle tax calculation
       const items = cart.map(item => ({
         id: item.id,
         type: item.type,
         title: item.title,
-        price: calculateItemWithTax(item.price),
+        price: item.price, // Send base price WITHOUT tax
         quantity: item.quantity || 1
       }));
 
-      // Call backend to create Stripe checkout session
+      // Send subtotal (without tax) to backend
       const response = await axiosInstance.post('/checkout/prepare', {
         items,
-        totalWithTax: taxData.totalWithTax
+        subtotal: taxData.subtotal, // Send subtotal for verification
+        taxRate: 0.23 // Send tax rate for reference
       });
 
       if (response.data.success && response.data.checkoutUrl) {
@@ -167,44 +169,44 @@ const Checkout = () => {
                     />
                   </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Zip/Postal Code</label>
-                        <input
-                          type="text"
-                          name="zipCode"
-                          value={formData.zipCode}
-                          onChange={handleInputChange}
-                          placeholder="Zip/Postal Code"
-                          className="w-full border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                      </div>
-                    </div>
-
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Phone Number *</label>
+                      <label className="block text-sm font-medium mb-2">Zip/Postal Code</label>
                       <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
+                        type="text"
+                        name="zipCode"
+                        value={formData.zipCode}
                         onChange={handleInputChange}
-                        placeholder="Phone Number"
+                        placeholder="Zip/Postal Code"
                         className="w-full border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                        required
                       />
                     </div>
+                  </div>
 
-                    <div className="pt-6">
-                      <button
-                        type="submit"
-                        className="w-full sm:w-auto bg-black text-white font-medium py-3 px-8 rounded-md hover:bg-gray-700 transition text-sm"
-                      >
-                        Continue to Payment
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Phone Number *</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      placeholder="Phone Number"
+                      className="w-full border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="pt-6">
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto bg-black text-white font-medium py-3 px-8 rounded-md hover:bg-gray-700 transition text-sm"
+                    >
+                      Continue to Payment
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
 
             {step === 'payment' && (
               <div className="mt-8">
@@ -217,6 +219,7 @@ const Checkout = () => {
                         <h4 className="font-semibold text-blue-900 mb-1">Secure Payment with Stripe</h4>
                         <p className="text-sm text-blue-800">
                           You'll be redirected to Stripe's secure checkout page to complete your payment.
+                          Tax (23%) will be calculated and added by Stripe.
                         </p>
                       </div>
                     </div>
@@ -224,8 +227,11 @@ const Checkout = () => {
 
                   <div className="border-t pt-6">
                     <div className="flex justify-between font-bold text-lg mb-6">
-                      <span>Total (including tax)</span>
+                      <span>Estimated Total (including tax)</span>
                       <span>${taxData.totalWithTax.toFixed(2)}</span>
+                    </div>
+                    <div className="text-sm text-gray-600 mb-4">
+                      <p>* Final amount may vary slightly due to Stripe's tax calculation</p>
                     </div>
                   </div>
 
@@ -291,7 +297,7 @@ const Checkout = () => {
                             <p className="text-xs text-gray-600 mt-1">{item.useCase}</p>
                             <div className="text-sm mt-1">
                               <span className="font-semibold">${item.price}</span>
-                              <span className="text-gray-600 ml-2">+ tax</span>
+                              <span className="text-gray-600 ml-2">+ 23% tax</span>
                             </div>
                           </div>
                           {item.quantity > 1 && (
@@ -311,15 +317,18 @@ const Checkout = () => {
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal</span>
-                  <span>${getTotalPrice().toFixed(2)}</span>
+                  <span>${taxData.subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Tax</span>
+                  <span>Tax (23%)</span>
                   <span>${taxData.taxAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                  <span>Total</span>
+                  <span>Estimated Total</span>
                   <span>${taxData.totalWithTax.toFixed(2)}</span>
+                </div>
+                <div className="text-xs text-gray-500 pt-2">
+                  <p>* Final total calculated by Stripe</p>
                 </div>
               </div>
 

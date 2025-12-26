@@ -4,7 +4,7 @@ import crypto from "crypto";
 import User from "../models/user.model.js";
 import VerificationToken from "../models/verificationToken.model.js";
 import { sendToken } from "../utils/sendToken.js";
-import { generateVerificationCode, sendVerificationEmail } from "../utils/emailService.js";
+import { generateVerificationCode, sendPasswordChangeConfirmation, sendPasswordResetEmail, sendVerificationEmail } from "../utils/emailService.js";
 
 // Helper: Generate random token
 function generateToken() {
@@ -171,7 +171,198 @@ export const completeSignup = async (req, res) => {
   }
 };
 
-// 4. Resend verification code
+
+// 4. Request Password Reset
+export const requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    const user = await User.findOne({ email, authType: 'email' });
+    if (!user) {
+      // Security: Always return success even if email doesn't exist
+      return res.json({ 
+        success: true, 
+        message: "If an account exists, a reset code will be sent" 
+      });
+    }
+    
+    // ✅ ADD THIS: Check for existing valid token
+    const existingToken = await VerificationToken.findOne({
+      email,
+      purpose: 'password-reset',
+      expiresAt: { $gt: new Date() },
+      status: 'pending'
+    });
+    
+    if (existingToken) {
+      // Return existing token
+      return res.json({
+        success: true,
+        token: existingToken.token,
+        message: "Reset code already sent. Please check your email."
+      });
+    }
+    
+    const token = crypto.randomBytes(32).toString('hex');
+    const verificationCode = generateVerificationCode(); // 6-digit
+    
+    // ✅ ADD THIS: Delete any old reset tokens
+    await VerificationToken.deleteMany({ 
+      email, 
+      purpose: 'password-reset' 
+    });
+    
+    await VerificationToken.create({
+      token,
+      email,
+      verificationCode,
+      purpose: 'password-reset',
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 min
+      status: 'pending'
+    });
+    
+    const emailResult = await sendPasswordResetEmail(email, verificationCode);
+    
+    // ✅ ADD THIS: Handle email sending failure
+    if (!emailResult.success) {
+      await VerificationToken.deleteOne({ token });
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to send reset email" 
+      });
+    }
+    
+    res.json({
+      success: true,
+      token, // Send token to frontend
+      message: "Reset code sent to email"
+    });
+    
+  } catch (err) {
+    console.error("Request reset error:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error" 
+    });
+  }
+};
+export const validateResetToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    const verification = await VerificationToken.findOne({
+      token,
+      purpose: 'password-reset',
+      expiresAt: { $gt: new Date() }
+    });
+    
+    if (!verification) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset link"
+      });
+    }
+    
+    res.json({
+      success: true,
+      email: verification.email
+    });
+    
+  } catch (err) {
+    console.error("Validate token error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
+
+// 4. Verify Reset Code
+export const verifyResetCode = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { code } = req.body;
+    
+    const verification = await VerificationToken.findOne({
+      token,
+      verificationCode: code,
+      purpose: 'password-reset',
+      expiresAt: { $gt: new Date() }
+    });
+    
+    if (!verification) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid or expired code" 
+      });
+    }
+    
+    // Update status to verified
+    verification.status = 'verified';
+    await verification.save();
+    
+    res.json({
+      success: true,
+      email: verification.email,
+      message: "Code verified successfully"
+    });
+    
+  } catch (err) {
+    console.error("Verify code error:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error" 
+    });
+  }
+};
+
+// 5. Reset Password (Final Step)
+export const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+    
+    // Find verified reset token
+    const verification = await VerificationToken.findOne({
+      token,
+      purpose: 'password-reset',
+      status: 'verified',
+      expiresAt: { $gt: new Date() }
+    });
+    
+    if (!verification) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid or expired session" 
+      });
+    }
+    
+    // Update user password
+    const user = await User.findOne({ email: verification.email });
+    user.password = await bcrypt.hash(password, 10);
+    await user.save();
+    
+    // Delete token (one-time use)
+    await VerificationToken.deleteOne({ token });
+    
+    // Send confirmation email
+    await sendPasswordChangeConfirmation(user.email);
+    
+    res.json({
+      success: true,
+      message: "Password updated successfully"
+    });
+    
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error" 
+    });
+  }
+};
+
+// 6. Resend verification code
 export const resendVerificationCode = async (req, res) => {
   try {
     const { token } = req.body;
@@ -211,7 +402,7 @@ export const resendVerificationCode = async (req, res) => {
   }
 };
 
-// 5. Check token status (for page refresh)
+// 7. Check token status (for page refresh)
 export const checkTokenStatus = async (req, res) => {
   try {
     const { token } = req.params;
@@ -251,7 +442,7 @@ export const checkTokenStatus = async (req, res) => {
   }
 };
 
-// 6. Login (unchanged - for reference)
+// 8. Login (unchanged - for reference)
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -292,6 +483,7 @@ export const login = async (req, res) => {
   }
 };
 
+
 export const checkAuth = async (req, res) => {
   try {
     res.status(200).json({
@@ -303,7 +495,7 @@ export const checkAuth = async (req, res) => {
   }
 };
 
-// 7. Logout (unchanged)
+// Logout (unchanged)
 export const logout = async (req, res) => {
   try {
     res.cookie("token", "", {
@@ -321,7 +513,7 @@ export const logout = async (req, res) => {
   }
 };
 
-// 8. Keep admin login as is (unchanged)
+// Keep admin login as is (unchanged)
 export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;

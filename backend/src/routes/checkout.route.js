@@ -14,6 +14,9 @@ const getStripe = () => {
   return new Stripe(process.env.STRIPE_SECRET_KEY);
 };
 
+// Define tax rate (23%)
+const TAX_RATE = 0.23;
+
 router.post("/prepare", protect, async (req, res) => {
   try {
     const stripe = getStripe();
@@ -22,7 +25,7 @@ router.post("/prepare", protect, async (req, res) => {
     const userId = req.user._id;
     const userEmail = req.user.email;
     
-    let { items, totalWithTax } = req.body; // Get items and totalWithTax from frontend
+    let { items, subtotal: frontendSubtotal, taxRate = TAX_RATE } = req.body;
     
     // Parse items if it's a string
     if (typeof items === 'string') {
@@ -43,13 +46,36 @@ router.post("/prepare", protect, async (req, res) => {
       });
     }
 
-    // Frontend already applied 23% tax, so use items as-is
-    const lineItems = [];
-    let subtotal = 0;
-
+    // Calculate backend subtotal to verify with frontend
+    let backendSubtotal = 0;
     for (const item of items) {
-      // Extract numeric price from string (e.g., "$300" -> 300)
-      // Note: Frontend should send tax-included price already
+      let price = item.price;
+      if (typeof price === 'string') {
+        price = parseFloat(price.replace(/[$,]/g, ''));
+      }
+      
+      if (isNaN(price) || price <= 0) {
+        console.error(`Invalid price for item: ${item.title}`, item);
+        continue;
+      }
+      backendSubtotal += price * (item.quantity || 1);
+    }
+
+    // Verify subtotal matches (allow small rounding differences)
+    if (frontendSubtotal && Math.abs(frontendSubtotal - backendSubtotal) > 0.01) {
+      console.warn(`Subtotal mismatch: frontend=${frontendSubtotal}, backend=${backendSubtotal}`);
+      // Use backend calculation for consistency
+    }
+
+    // Use backend subtotal
+    const subtotal = backendSubtotal;
+    const tax = subtotal * taxRate;
+    const total = subtotal + tax;
+
+    // Create line items for Stripe with base prices
+    const lineItems = [];
+    
+    for (const item of items) {
       let price = item.price;
       if (typeof price === 'string') {
         price = parseFloat(price.replace(/[$,]/g, ''));
@@ -60,17 +86,18 @@ router.post("/prepare", protect, async (req, res) => {
         continue;
       }
 
-      const itemSubtotal = price * (item.quantity || 1);
-      subtotal += itemSubtotal;
-
       lineItems.push({
         price_data: {
           currency: 'usd',
           product_data: {
             name: item.title || 'Product',
-            description: item.useCase || item.description || undefined
+            description: item.useCase || item.description || undefined,
+            metadata: {
+              type: item.type || 'product',
+              id: String(item.id)
+            }
           },
-          unit_amount: Math.round(price * 100) // Convert to cents
+          unit_amount: Math.round(price * 100) // Base price in cents
         },
         quantity: item.quantity || 1
       });
@@ -83,14 +110,6 @@ router.post("/prepare", protect, async (req, res) => {
       });
     }
 
-    // Calculate totals (frontend already calculated tax)
-    const total = totalWithTax || lineItems.reduce((sum, item) => 
-      sum + (item.price_data.unit_amount / 100) * item.quantity, 0
-    );
-    
-    // Calculate tax from frontend total or estimate
-    const tax = totalWithTax ? totalWithTax - subtotal : subtotal * 0.23;
-
     // Prepare items array for database
     const orderItems = items.map(item => {
       const itemPrice = typeof item.price === 'string' ? 
@@ -98,7 +117,9 @@ router.post("/prepare", protect, async (req, res) => {
         Number(item.price) || 0;
       const itemQuantity = Number(item.quantity) || 1;
       const itemSubtotal = itemPrice * itemQuantity;
-      const itemTax = itemSubtotal * 0.23; // Assuming 23% tax per item
+      
+      // Calculate tax proportionally for each item
+      const itemTax = itemSubtotal * taxRate;
       const itemTotal = itemSubtotal + itemTax;
 
       return {
@@ -106,7 +127,7 @@ router.post("/prepare", protect, async (req, res) => {
         type: String(item.type || 'product'),
         title: String(item.title || 'Unknown'),
         useCase: item.useCase || '',
-        price: itemPrice,
+        price: itemPrice, // Store base price
         quantity: itemQuantity,
         subtotal: itemSubtotal,
         tax: itemTax,
@@ -114,7 +135,7 @@ router.post("/prepare", protect, async (req, res) => {
       };
     });
 
-    // ✅ Create order FIRST in database with user reference
+    // ✅ Create order in database with user reference
     const newOrder = await Order.create({
       user: userId,           // From authenticated user
       email: userEmail,       // From user account (verified email)
@@ -123,6 +144,7 @@ router.post("/prepare", protect, async (req, res) => {
       tax: tax,
       total: total,
       currency: 'USD',
+      taxRate: taxRate,
       stripe: {
         sessionId: null,      // Will be set after Stripe session creation
         paymentIntentId: null,
@@ -143,23 +165,56 @@ router.post("/prepare", protect, async (req, res) => {
       total: total
     });
 
-    // ✅ Create Stripe session with minimal metadata (orderId only)
-    const session = await stripe.checkout.sessions.create({
+    // Create a tax rate in Stripe (optional, for automatic tax calculation)
+    let stripeTaxRate;
+    try {
+      stripeTaxRate = await stripe.taxRates.create({
+        display_name: 'Sales Tax',
+        inclusive: false, // Tax is added on top of price
+        percentage: taxRate * 100, // 23%
+        country: 'PK', // Pakistan
+        description: '23% Sales Tax'
+      });
+      console.log('✅ Created Stripe tax rate:', stripeTaxRate.id);
+    } catch (taxError) {
+      console.warn('Could not create Stripe tax rate, using automatic tax:', taxError.message);
+    }
+
+    // ✅ Create Stripe session
+    const sessionConfig = {
       mode: "payment",
       payment_method_types: ["card"],
       line_items: lineItems,
-      customer_email: userEmail,  // Use authenticated user's email
+      customer_email: userEmail,
       metadata: {
-        orderId: newOrder._id.toString(),  // ONLY store order ID (not items!)
-        userId: userId.toString()           // For verification
+        orderId: newOrder._id.toString(),
+        userId: userId.toString(),
+        taxRate: taxRate.toString()
       },
       success_url: `${process.env.FRONTEND_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/checkout/cancel`,
-      expires_at: Math.floor(Date.now() / 1000) + (30 * 60) // Session expires in 30 minutes
-    });
+      expires_at: Math.floor(Date.now() / 1000) + (30 * 60) // 30 minutes
+    };
+
+    // Add tax calculation to Stripe session
+    if (stripeTaxRate) {
+      // Apply the tax rate to all line items
+      sessionConfig.line_items = lineItems.map(item => ({
+        ...item,
+        tax_rates: [stripeTaxRate.id]
+      }));
+    } else {
+      // Use Stripe's automatic tax calculation
+      sessionConfig.automatic_tax = { enabled: true };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     // ✅ Update order with Stripe session ID
     newOrder.stripe.sessionId = session.id;
+    if (stripeTaxRate) {
+      newOrder.stripe.taxRateId = stripeTaxRate.id;
+    }
     await newOrder.save();
 
     // Emit WebSocket event for new pending order
@@ -171,7 +226,12 @@ router.post("/prepare", protect, async (req, res) => {
       success: true,
       checkoutUrl: session.url,
       sessionId: session.id,
-      orderId: newOrder._id
+      orderId: newOrder._id,
+      calculatedTotals: {
+        subtotal: subtotal,
+        tax: tax,
+        total: total
+      }
     });
 
   } catch (error) {
@@ -184,15 +244,17 @@ router.post("/prepare", protect, async (req, res) => {
   }
 });
 
-// Verify payment endpoint - use this in dev when webhooks can't reach localhost
+// Verify payment endpoint
 router.get("/verify/:sessionId", protect, async (req, res) => {
   try {
     const stripe = getStripe();
     const { sessionId } = req.params;
-    const userId = req.user._id; // Get authenticated user ID
+    const userId = req.user._id;
 
     // Retrieve the session from Stripe to verify payment
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['line_items']
+    });
 
     console.log(`🔍 Verifying session ${sessionId}, payment_status: ${session.payment_status}`);
 
@@ -200,7 +262,7 @@ router.get("/verify/:sessionId", protect, async (req, res) => {
       // Find order by session ID and user ID
       const existingOrder = await Order.findOne({ 
         "stripe.sessionId": sessionId,
-        user: userId // Ensure order belongs to this user
+        user: userId
       });
       
       if (!existingOrder) {
@@ -220,26 +282,31 @@ router.get("/verify/:sessionId", protect, async (req, res) => {
         });
       }
 
-      // Verify metadata matches
-      if (session.metadata.orderId !== existingOrder._id.toString()) {
-        console.error(`❌ Order ID mismatch: metadata ${session.metadata.orderId} vs db ${existingOrder._id}`);
-        return res.status(400).json({
-          success: false,
-          message: "Order verification failed"
-        });
-      }
+      // Get final totals from Stripe
+      const stripeTotal = session.amount_total / 100; // Convert from cents
+      const stripeSubtotal = session.amount_subtotal / 100;
+      const stripeTax = stripeTotal - stripeSubtotal;
 
-      // Update the order to paid
+      // Update the order with Stripe's final calculations
       const order = await Order.findOneAndUpdate(
         { 
           _id: existingOrder._id,
-          user: userId // Additional security check
+          user: userId
         },
         { 
           status: "paid",
+          subtotal: stripeSubtotal,
+          tax: stripeTax,
+          total: stripeTotal,
           "stripe.paymentIntentId": session.payment_intent,
           "stripe.customerId": session.customer,
-          paidAt: new Date()
+          paidAt: new Date(),
+          finalStripeData: {
+            amount_total: session.amount_total,
+            amount_subtotal: session.amount_subtotal,
+            amount_tax: session.total_details?.amount_tax || 0,
+            currency: session.currency
+          }
         },
         { new: true }
       );
@@ -250,10 +317,17 @@ router.get("/verify/:sessionId", protect, async (req, res) => {
         emitOrderStatusChange(order.toObject());
         
         console.log(`✅ Payment verified and order updated: ${order._id}`);
+        console.log(`💰 Stripe totals - Subtotal: $${stripeSubtotal}, Tax: $${stripeTax}, Total: $${stripeTotal}`);
+        
         return res.json({ 
           success: true, 
           message: "Payment verified", 
-          order 
+          order,
+          stripeTotals: {
+            subtotal: stripeSubtotal,
+            tax: stripeTax,
+            total: stripeTotal
+          }
         });
       }
     }

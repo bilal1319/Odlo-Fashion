@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "../utils/axiosInstance";
-import {
+import { 
   ClipboardDocumentListIcon,
   ClockIcon,
   CheckCircleIcon,
@@ -8,6 +8,7 @@ import {
   EyeIcon,
   CreditCardIcon,
   XMarkIcon,
+  ArrowDownTrayIcon // Added for download icon
 } from "@heroicons/react/24/outline";
 
 const UserOrders = () => {
@@ -17,6 +18,7 @@ const UserOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [downloadingOrderId, setDownloadingOrderId] = useState(null); // Track which order is downloading
 
   useEffect(() => {
     fetchUserOrders();
@@ -25,8 +27,8 @@ const UserOrders = () => {
   const fetchUserOrders = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get("/orders/my-orders");
-
+      const response = await axiosInstance.get('/orders/my-orders');
+      
       if (response.data.success) {
         setOrders(response.data.orders);
       } else {
@@ -40,39 +42,77 @@ const UserOrders = () => {
     }
   };
 
-  const filteredOrders = orders.filter((order) => {
+  // ✅ NEW: Download receipt function
+  const downloadReceipt = async (orderId) => {
+    try {
+      setDownloadingOrderId(orderId);
+      
+      const response = await axiosInstance.get(
+        `/orders/${orderId}/receipt`,
+        { 
+          responseType: 'blob',
+          headers: {
+            'Accept': 'application/pdf'
+          }
+        }
+      );
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice-${orderId.slice(-6)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        link.remove();
+      }, 100);
+      
+    } catch (err) {
+      console.error("Download receipt error:", err);
+      alert("Failed to download receipt. Please try again.");
+    } finally {
+      setDownloadingOrderId(null);
+    }
+  };
+
+  // Rest of your existing functions remain the same...
+  const filteredOrders = orders.filter(order => {
     if (filter === "all") return true;
     return order.status === filter;
   });
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
     }).format(amount);
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "pending":
+      case 'pending':
         return <ClockIcon className="h-5 w-5 text-yellow-500" />;
-      case "paid":
+      case 'paid':
         return <CreditCardIcon className="h-5 w-5 text-blue-500" />;
-      case "completed":
+      case 'completed':
         return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
-      case "cancelled":
-      case "expired":
+      case 'cancelled':
+      case 'expired':
         return <XCircleIcon className="h-5 w-5 text-red-500" />;
       default:
         return <ClipboardDocumentListIcon className="h-5 w-5 text-gray-500" />;
@@ -81,22 +121,21 @@ const UserOrders = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "paid":
-        return "bg-blue-100 text-blue-800";
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "cancelled":
-      case "expired":
-        return "bg-red-100 text-red-800";
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'paid':
+        return 'bg-blue-100 text-blue-800';
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'cancelled':
+      case 'expired':
+        return 'bg-red-100 text-red-800';
       default:
-        return "bg-gray-100 text-gray-800";
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const openOrderDetails = (order) => {
-    console.log("Opening order:", order); // Debug log
     setSelectedOrder(order);
     setShowModal(true);
   };
@@ -111,17 +150,17 @@ const UserOrders = () => {
   // Close modal on Escape key
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === "Escape") closeOrderDetails();
+      if (e.key === 'Escape') closeOrderDetails();
     };
-
+    
     if (showModal) {
-      document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden"; // Prevent scrolling
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
     }
-
+    
     return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "auto"; // Re-enable scrolling
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'auto';
     };
   }, [showModal]);
 
@@ -151,9 +190,7 @@ const UserOrders = () => {
             <ClipboardDocumentListIcon className="h-8 w-8 text-gray-700" />
             <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
           </div>
-          <p className="text-gray-600">
-            View and manage all your service orders
-          </p>
+          <p className="text-gray-600">View and manage all your service orders</p>
         </div>
 
         {/* Error Message */}
@@ -166,20 +203,20 @@ const UserOrders = () => {
         {/* Filter Tabs */}
         <div className="mb-6">
           <div className="flex flex-wrap gap-2">
-            {["all", "pending", "paid", "cancelled"].map((status) => (
+            {['all', 'pending', 'paid', 'cancelled'].map((status) => (
               <button
                 key={status}
                 onClick={() => setFilter(status)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   filter === status
-                    ? "bg-gray-900 text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
                 }`}
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)} Orders
-                {status !== "all" && (
+                {status !== 'all' && (
                   <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-200 text-gray-700">
-                    {orders.filter((o) => o.status === status).length}
+                    {orders.filter(o => o.status === status).length}
                   </span>
                 )}
               </button>
@@ -192,11 +229,9 @@ const UserOrders = () => {
           {filteredOrders.length === 0 ? (
             <div className="text-center py-12">
               <ClipboardDocumentListIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No orders found
-              </h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
               <p className="text-gray-500">
-                {filter === "all"
+                {filter === 'all'
                   ? "You haven't placed any orders yet."
                   : `You don't have any ${filter} orders.`}
               </p>
@@ -231,7 +266,7 @@ const UserOrders = () => {
                     <tr key={order._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          ORDER-{order._id?.slice(-8)?.toUpperCase() || "N/A"}
+                          ORDER-{order._id?.slice(-8)?.toUpperCase() || 'N/A'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -242,25 +277,18 @@ const UserOrders = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(order.status)}
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                              order.status
-                            )}`}
-                          >
-                            {order.status?.charAt(0)?.toUpperCase() +
-                              order.status?.slice(1) || "Unknown"}
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
+                            {order.status?.charAt(0)?.toUpperCase() + order.status?.slice(1) || 'Unknown'}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">
-                          {order.items?.length || 0} service
-                          {order.items?.length !== 1 ? "s" : ""}
+                          {order.items?.length || 0} service{order.items?.length !== 1 ? 's' : ''}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {order.items?.[0]?.title || "No items"}
-                          {order.items?.length > 1 &&
-                            ` +${order.items.length - 1} more`}
+                          {order.items?.[0]?.title || 'No items'}
+                          {order.items?.length > 1 && ` +${order.items.length - 1} more`}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -269,13 +297,40 @@ const UserOrders = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => openOrderDetails(order)}
-                          className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                          View Details
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => openOrderDetails(order)}
+                            className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                            View
+                          </button>
+                          {/* ✅ ADDED DOWNLOAD BUTTON */}
+                          <button
+                            onClick={() => downloadReceipt(order._id)}
+                            disabled={downloadingOrderId === order._id}
+                            className={`inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium ${
+                              downloadingOrderId === order._id
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500`}
+                          >
+                            {downloadingOrderId === order._id ? (
+                              <>
+                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <ArrowDownTrayIcon className="h-4 w-4" />
+                                Receipt
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -285,15 +340,15 @@ const UserOrders = () => {
           )}
         </div>
 
-        {/* Order Details Modal - SIMPLIFIED FIX */}
+        {/* Order Details Modal - ADDED DOWNLOAD BUTTON */}
         {showModal && selectedOrder && (
           <>
             {/* Backdrop */}
-            <div
+            <div 
               className="fixed inset-0 z-50 bg-black opacity-40 transition-opacity"
               onClick={closeOrderDetails}
             ></div>
-
+            
             {/* Modal Container */}
             <div className="fixed inset-0 z-50 h-screen overflow-y-auto">
               <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
@@ -304,13 +359,11 @@ const UserOrders = () => {
                     <div className="flex items-start justify-between">
                       <div className="mt-3 text-left sm:mt-0 sm:ml-4">
                         <h3 className="text-lg font-semibold leading-6 text-gray-900">
-                          Order Details: ORDER-
-                          {selectedOrder._id?.slice(-8)?.toUpperCase() || "N/A"}
+                          Order Details: ORDER-{selectedOrder._id?.slice(-8)?.toUpperCase() || 'N/A'}
                         </h3>
                         <div className="mt-2">
                           <p className="text-sm text-gray-500">
-                            {formatDate(selectedOrder.createdAt)} •{" "}
-                            {selectedOrder.email}
+                            {formatDate(selectedOrder.createdAt)} • {selectedOrder.email}
                           </p>
                         </div>
                       </div>
@@ -332,33 +385,18 @@ const UserOrders = () => {
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-sm text-gray-500">
-                              Order Status
-                            </p>
+                            <p className="text-sm text-gray-500">Order Status</p>
                             <div className="flex items-center gap-2 mt-1">
                               {getStatusIcon(selectedOrder.status)}
-                              <span
-                                className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                                  selectedOrder.status
-                                )}`}
-                              >
-                                {selectedOrder.status
-                                  ?.charAt(0)
-                                  ?.toUpperCase() +
-                                  selectedOrder.status?.slice(1) || "Unknown"}
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedOrder.status)}`}>
+                                {selectedOrder.status?.charAt(0)?.toUpperCase() + selectedOrder.status?.slice(1) || 'Unknown'}
                               </span>
                             </div>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-500">
-                              Total Amount
-                            </p>
+                            <p className="text-sm text-gray-500">Total Amount</p>
                             <p className="text-lg font-semibold text-gray-900 mt-1">
-                              {formatCurrency(
-                                selectedOrder.total ||
-                                  selectedOrder.amountPaid ||
-                                  0
-                              )}
+                              {formatCurrency(selectedOrder.total || selectedOrder.amountPaid || 0)}
                             </p>
                           </div>
                         </div>
@@ -366,34 +404,24 @@ const UserOrders = () => {
 
                       {/* Customer Information */}
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">
-                          Customer Information
-                        </h4>
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Customer Information</h4>
                         <div className="bg-gray-50 rounded-lg p-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <p className="text-xs text-gray-500">Email</p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {selectedOrder.email}
-                              </p>
+                              <p className="text-sm font-medium text-gray-900">{selectedOrder.email}</p>
                             </div>
                             {selectedOrder.shippingInfo?.phone && (
                               <div>
                                 <p className="text-xs text-gray-500">Phone</p>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {selectedOrder.shippingInfo.phone}
-                                </p>
+                                <p className="text-sm font-medium text-gray-900">{selectedOrder.shippingInfo.phone}</p>
                               </div>
                             )}
                           </div>
                           {selectedOrder.shippingInfo?.address && (
                             <div className="mt-3">
-                              <p className="text-xs text-gray-500">
-                                Shipping Address
-                              </p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {selectedOrder.shippingInfo.address}
-                              </p>
+                              <p className="text-xs text-gray-500">Shipping Address</p>
+                              <p className="text-sm font-medium text-gray-900">{selectedOrder.shippingInfo.address}</p>
                             </div>
                           )}
                         </div>
@@ -401,37 +429,25 @@ const UserOrders = () => {
 
                       {/* Services Purchased */}
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">
-                          Services Purchased
-                        </h4>
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Services Purchased</h4>
                         <div className="space-y-3">
                           {selectedOrder.items?.map((item, index) => (
-                            <div
-                              key={index}
-                              className="border border-gray-200 rounded-lg p-4"
-                            >
+                            <div key={index} className="border border-gray-200 rounded-lg p-4">
                               <div className="flex justify-between items-start">
                                 <div>
-                                  <h5 className="font-medium text-gray-900">
-                                    {item.title || "Unknown Item"}
-                                  </h5>
+                                  <h5 className="font-medium text-gray-900">{item.title || 'Unknown Item'}</h5>
                                   {item.useCase && (
-                                    <p className="text-sm text-gray-600 mt-1">
-                                      {item.useCase}
-                                    </p>
+                                    <p className="text-sm text-gray-600 mt-1">{item.useCase}</p>
                                   )}
                                   <div className="mt-2">
                                     <span className="text-sm text-gray-500">
-                                      {item.quantity || 1} ×{" "}
-                                      {formatCurrency(item.price || 0)}
+                                      {item.quantity || 1} × {formatCurrency(item.price || 0)}
                                     </span>
                                   </div>
                                 </div>
                                 <div className="text-right">
                                   <p className="font-semibold text-gray-900">
-                                    {formatCurrency(
-                                      (item.price || 0) * (item.quantity || 1)
-                                    )}
+                                    {formatCurrency((item.price || 0) * (item.quantity || 1))}
                                   </p>
                                 </div>
                               </div>
@@ -442,20 +458,14 @@ const UserOrders = () => {
 
                       {/* Payment Information */}
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">
-                          Payment Information
-                        </h4>
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Payment Information</h4>
                         <div className="bg-gray-50 rounded-lg p-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <p className="text-xs text-gray-500">
-                                Payment Method
-                              </p>
+                              <p className="text-xs text-gray-500">Payment Method</p>
                               <div className="flex items-center gap-2 mt-1">
                                 <CreditCardIcon className="h-5 w-5 text-gray-400" />
-                                <span className="text-sm font-medium text-gray-900">
-                                  Stripe
-                                </span>
+                                <span className="text-sm font-medium text-gray-900">Stripe</span>
                               </div>
                             </div>
                             {selectedOrder.paidAt && (
@@ -469,9 +479,7 @@ const UserOrders = () => {
                           </div>
                           {selectedOrder.stripe?.paymentIntentId && (
                             <div className="mt-3">
-                              <p className="text-xs text-gray-500">
-                                Transaction ID
-                              </p>
+                              <p className="text-xs text-gray-500">Transaction ID</p>
                               <p className="text-sm font-mono text-gray-900 break-all">
                                 {selectedOrder.stripe.paymentIntentId}
                               </p>
@@ -483,16 +491,23 @@ const UserOrders = () => {
                       {/* Amount Breakdown */}
                       {(selectedOrder.subtotal || selectedOrder.tax) && (
                         <div className="border-t border-gray-200 pt-6">
+                          <h4 className="text-sm font-medium text-gray-900 mb-3">Amount Breakdown</h4>
                           <div className="space-y-2">
-                            <div className="flex justify-between text-lg font-semibold pt-2">
+                            {selectedOrder.subtotal && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Subtotal</span>
+                                <span className="font-medium">{formatCurrency(selectedOrder.subtotal)}</span>
+                              </div>
+                            )}
+                            {selectedOrder.tax && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Tax (23%)</span>
+                                <span className="font-medium">{formatCurrency(selectedOrder.tax)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between text-lg font-semibold border-t border-gray-200 pt-2">
                               <span>Total</span>
-                              <span>
-                                {formatCurrency(
-                                  selectedOrder.total ||
-                                    selectedOrder.amountPaid ||
-                                    0
-                                )}
-                              </span>
+                              <span>{formatCurrency(selectedOrder.total || selectedOrder.amountPaid || 0)}</span>
                             </div>
                           </div>
                         </div>
@@ -500,15 +515,43 @@ const UserOrders = () => {
                     </div>
                   </div>
 
-                  {/* Modal Footer */}
+                  {/* Modal Footer with Download Button */}
                   <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                    <button
-                      type="button"
-                      className="inline-flex w-full justify-center rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 sm:ml-3 sm:w-auto"
-                      onClick={closeOrderDetails}
-                    >
-                      Close
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                      {/* ✅ ADDED DOWNLOAD BUTTON IN MODAL */}
+                      <button
+                        type="button"
+                        onClick={() => downloadReceipt(selectedOrder._id)}
+                        disabled={downloadingOrderId === selectedOrder._id}
+                        className={`inline-flex justify-center items-center gap-2 rounded-md ${
+                          downloadingOrderId === selectedOrder._id
+                            ? 'bg-gray-300 cursor-not-allowed'
+                            : 'bg-gray-900 hover:bg-gray-800'
+                        } px-4 py-2 text-sm font-semibold text-white shadow-sm sm:w-auto`}
+                      >
+                        {downloadingOrderId === selectedOrder._id ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Generating PDF...
+                          </>
+                        ) : (
+                          <>
+                            <ArrowDownTrayIcon className="h-4 w-4" />
+                            Download Receipt
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className="inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                        onClick={closeOrderDetails}
+                      >
+                        Close
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

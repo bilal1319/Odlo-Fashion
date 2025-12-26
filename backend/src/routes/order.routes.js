@@ -4,7 +4,8 @@ import {
     getOrderBySession, 
     getOrdersByEmail,
     getOrdersByUser,
-    getOrderById
+    getOrderById,
+    downloadReceipt
 } from '../controllers/order.controller.js';
 import { protect, authorizeRoles } from '../middlewares/authMiddleware.js';
 
@@ -21,6 +22,8 @@ router.get('/session/:sessionId', protect, getOrderBySession);
 
 // Get order by ID (protected - user must own order or be admin)
 router.get('/:orderId', protect, getOrderById);
+// Download receipt for an order
+router.get('/:orderId/receipt', protect, downloadReceipt);
 
 // Get orders by email (admin only - legacy/deprecated)
 router.get('/email/:email', protect, authorizeRoles('admin'), getOrdersByEmail);
