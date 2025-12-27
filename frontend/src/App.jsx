@@ -31,6 +31,9 @@ import UserOrders from './pages/UserOrders';
 import Footer from './components/Footer';
 import ForgotPasswordPage from './pages/ForgotPassword';
 import ResetPasswordPage from './pages/ResetPassword';
+import RefundPolicy from './pages/RefundPolicy';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsConditions from './pages/TermsConditons';
 
 
 function App() {
@@ -102,7 +105,8 @@ function Layout() {
     '/signin', '/signup', 
     '/admin/login', '/admin/signup',
     '/checkout/success', '/checkout/cancel',
-    '/admin','/admin/service','/admin/bundle'
+    '/admin','/admin/service','/admin/bundle',"/reset-password/:token",
+    "/verify", "/forgot-password", "/reset-password"
   ];
   const showNavbar = !noNavbarRoutes.includes(location.pathname) && 
                      !location.pathname.startsWith('/admin/');
@@ -114,6 +118,9 @@ function Layout() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-conditions" element={<TermsConditions />} />
           <Route path="/services" element={<Services />} />
           <Route path="/service/:slug" element={<ServicesDetails />} />
           <Route path="/bundles" element={<Bundles />} />

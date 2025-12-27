@@ -326,7 +326,7 @@ const UserOrders = () => {
                             ) : (
                               <>
                                 <ArrowDownTrayIcon className="h-4 w-4" />
-                                Receipt
+                                Invoice
                               </>
                             )}
                           </button>
@@ -540,7 +540,7 @@ const UserOrders = () => {
                         ) : (
                           <>
                             <ArrowDownTrayIcon className="h-4 w-4" />
-                            Download Receipt
+                            Download Invoice
                           </>
                         )}
                       </button>

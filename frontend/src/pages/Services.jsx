@@ -168,7 +168,7 @@ const Services = () => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
               {categoryInfo[selectedCategory]?.title}
             </h1>
-            <p className="text-xl text-gray-200 max-w-3xl mx-auto mb-8">
+            <p className="text-lg text-gray-200 max-w-3xl mx-auto mb-8">
               {categoryInfo[selectedCategory]?.description}
             </p>
           </div>

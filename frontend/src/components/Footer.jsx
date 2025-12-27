@@ -11,6 +11,7 @@ import {
   FaCcAmex,
   FaCreditCard
 } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 const Footer = () => {
   const products = [
@@ -101,18 +102,24 @@ const Footer = () => {
             <div className="mb-8">
               <p className='font-bold text-black text-xl    mb-4'>POLICIES</p>
               <div className="space-y-2">
-                <a 
-                  href="#" 
+                <Link
+                  to="/privacy-policy" 
                   className="block text-gray-600 hover:text-black transition-colors"
                 >
                   Privacy Policy
-                </a>
-                <a 
-                  href="#" 
+                </Link>
+                <Link
+                  to="/refund-policy" 
                   className="block text-gray-600 hover:text-black transition-colors"
                 >
                   Refund Policy
-                </a>
+                </Link>
+                <Link
+                  to="/terms-conditions" 
+                  className="block text-gray-600 hover:text-black transition-colors"
+                >
+                  Terms & Conditions
+                </Link>
               </div>
             </div>
 

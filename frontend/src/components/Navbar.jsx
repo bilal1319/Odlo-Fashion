@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { BsCart3 } from "react-icons/bs";
-import { FiLogOut } from "react-icons/fi";
+import { FiLogOut, FiLogIn } from "react-icons/fi";
 import useProductsStore from "../store/productsSrtore";
 import useAuthStore from "../store/authStore";
 import { useNavigate } from "react-router-dom";
@@ -275,22 +275,25 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Logout Button */}
+            {/* User Auth Section */}
             {user ? (
+              // Logout Button for logged-in users
               <button
                 onClick={handleLogoutClick}
                 className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity group"
                 title="Logout"
               >
-                <FiLogOut className="text-lg  transition-transform duration-200" />
+                <FiLogOut className="text-lg transition-transform duration-200" />
                 <span className="hidden md:inline">Logout</span>
               </button>
             ) : (
+              // Sign In Button for guests
               <Link
                 to="/signin"
-                className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                className="flex items-center gap-2 uppercase text-sm cursor-pointer hover:opacity-80 transition-opacity group"
                 title="Sign In"
               >
+                <FiLogIn className="text-lg transition-transform duration-200" />
                 <span className="hidden md:inline">Sign In</span>
               </Link>
             )}
@@ -364,6 +367,22 @@ export default function Navbar() {
             }`}
           >
             <div className="pt-20 px-6">
+              {/* User Info Section (Mobile) - Show only when logged in */}
+              {user && (
+                <div className="mb-6 pb-4 border-b border-gray-800">
+                  <div className="flex items-center gap-3">
+                    {/* User Avatar/Initial */}
+                    <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div>
+                      <p className="font-medium">{user.name || user.email?.split('@')[0]}</p>
+                      <p className="text-sm text-gray-400">{user.email}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Mobile Cart */}
               <div className="mb-8 pb-4 border-b border-gray-800">
                 <Link 
@@ -372,8 +391,9 @@ export default function Navbar() {
                   onClick={closeMobileMenu}
                 >
                   <BsCart3 className="text-lg" />
+                  Cart
                   {cartCount > 0 && (
-                    <span className="absolute left-7 top-0 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+                    <span className="ml-2 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
                       {cartCount}
                     </span>
                   )}
@@ -440,9 +460,10 @@ export default function Navbar() {
                   </li>
                 ))}
 
-                {/* Mobile Logout Button */}
-                {user && (
-                  <li className="border-b border-gray-800">
+                {/* Mobile Authentication Section */}
+                <li className="border-b border-gray-800">
+                  {user ? (
+                    // Logout Button for logged-in users
                     <button
                       onClick={handleLogoutClick}
                       className="py-4 text-lg flex items-center gap-3 hover:text-gray-300 transition-colors w-full text-left"
@@ -450,6 +471,30 @@ export default function Navbar() {
                       <FiLogOut className="text-base" />
                       Logout
                     </button>
+                  ) : (
+                    // Sign In Link for guests
+                    <Link
+                      to="/signin"
+                      className="py-4 text-lg flex items-center gap-3 hover:text-gray-300 transition-colors"
+                      onClick={closeMobileMenu}
+                    >
+                      <FiLogIn className="text-base" />
+                      Sign In
+                    </Link>
+                  )}
+                </li>
+
+                {/* Optional: Register/Sign Up link for guests */}
+                {!user && (
+                  <li className="border-b border-gray-800">
+                    <Link
+                      to="/signup" // Update with your signup route
+                      className="py-4 text-lg flex items-center gap-3 hover:text-gray-300 transition-colors"
+                      onClick={closeMobileMenu}
+                    >
+                      <span className="w-5 text-center">+</span>
+                      Create Account
+                    </Link>
                   </li>
                 )}
               </ul>
